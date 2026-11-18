@@ -1,5 +1,11 @@
 # Implementation status — 18 November 2026
 
+## Dokumentasi deployment server Linux
+
+- Menambahkan `DEPLOY.md` di root: Ubuntu/Debian, user `iot_gateway`, proyek `/home/iot_gateway/Photobooth`, Next.js `0.0.0.0:3005`, service systemd dan site Nginx bernama `kmi-photobooth`, domain `booth.todays.id`, DNS/HTTPS, pengujian operator, pembaruan dan troubleshooting.
+- Contoh tidak memuat credential asli. Next.js memuat `.env.local` sendiri untuk mempertahankan escaping hash; systemd menggunakan path Node aktual yang ditemukan saat instalasi. Asumsi Nginx satu server dijelaskan beserta variasi proxy terpisah.
+- Perubahan hanya dokumentasi; formatter dan pemeriksaan whitespace dijalankan. Tidak mengubah environment/aplikasi dan tidak menjalankan perintah deployment pada server remote. Verifikasi service, DNS, firewall, sertifikat dan smoke event tetap dilakukan operator di server.
+
 ## Perbaikan login admin — hash environment dan password enam karakter
 
 - Diagnosis lokal: hash Argon2id dan session secret tersedia, tetapi `$` pada hash di `.env.local` belum di-escape sehingga Next.js melakukan ekspansi variabel dan merusak nilai saat memuat environment. Hash lama diperbaiki tanpa mengganti password operator atau konfigurasi Drive; nilai secret tidak dicetak.
