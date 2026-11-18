@@ -7,7 +7,7 @@ import type { Backend, Folder, StoredFile } from "./backend";
 import { frameSchema } from "../schema";
 import { fail } from "../errors";
 export class MockBackend implements Backend {
-  files = new Map<string, StoredFile & { folder: Folder; bytes: Buffer }>();
+  files = new Map<string, StoredFile & { folder: string; bytes: Buffer }>();
   async list(folder: Folder) {
     return [...this.files.values()]
       .filter((f) => f.folder === folder && f.mimeType === "application/json")
@@ -19,9 +19,29 @@ export class MockBackend implements Backend {
     return file.bytes;
   }
   async create(folder: Folder, name: string, mimeType: string, bytes: Buffer) {
+    return this.createInFolder(folder, name, mimeType, bytes);
+  }
+  async createInFolder(
+    folder: string,
+    name: string,
+    mimeType: string,
+    bytes: Buffer,
+  ) {
     const id = randomUUID();
     this.files.set(id, { id, name, mimeType, bytes, folder });
     return id;
+  }
+  async createFolder(folder: Folder, name: string) {
+    return this.create(
+      folder,
+      name,
+      "application/vnd.google-apps.folder",
+      Buffer.alloc(0),
+    );
+  }
+  async assertPublic(id: string): Promise<void> {
+    void id;
+    fail(503, "DEMO_ONLY", "Mode demo tidak membagikan hasil ke Drive.");
   }
   async update(id: string, bytes: Buffer) {
     const file = this.files.get(id);

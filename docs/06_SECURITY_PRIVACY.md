@@ -1,23 +1,27 @@
 # 06 — Security, privacy, threat model
 
+Revisi boomerang: hasil kini PNG + MP4 dalam satu folder sesi. [13_BOOMERANG.md](13_BOOMERANG.md) dan kontrak API terbaru menggantikan ketentuan awal satu-file. Tidak ada database atau history pengguna. Pose edit diproses di OS temp server privat, dibersihkan pada sukses/gagal. Video lokal tetap Blob di browser sampai refresh.
+
 ## 1. Data handling matrix
 
-| Data                              | Diproses di                     | Persisted?                           | Audience                                  |
-| --------------------------------- | ------------------------------- | ------------------------------------ | ----------------------------------------- |
-| Raw individual captures           | Browser memory                  | Tidak (default)                      | Guest yang mengambil                      |
-| Photo strip final sebelum upload  | Browser memory                  | Tidak sampai user mengizinkan upload | Guest                                     |
-| Photo strip final setelah upload  | Google Drive `photos/`          | **Ya** sampai dihapus operator       | Siapa pun yang punya link (anyone-reader) |
-| Frame PNG, thumbnail, config JSON | Google Drive `frames/`          | Ya                                   | Admin; published asset via proxy ke guest |
-| QR                                | Browser memory                  | Tidak                                | Guest saat tab masih aktif                |
-| Admin password hash               | Server environment              | Ya di hosting secret                 | Operator/backend                          |
-| Admin session cookie              | Browser cookie, signed HttpOnly | Sementara sampai expired             | Admin browser                             |
-| OAuth refresh token               | Server environment              | Ya di hosting secret                 | Backend saja                              |
+| Data                              | Diproses di                      | Persisted?                            | Audience                                  |
+| --------------------------------- | -------------------------------- | ------------------------------------- | ----------------------------------------- |
+| Raw individual captures           | Browser memory                   | Tidak (default)                       | Guest yang mengambil                      |
+| Photo strip final sebelum upload  | Browser memory                   | Tidak sampai user mengizinkan upload  | Guest                                     |
+| Kolase + video setelah upload     | Google Drive `photos/<session>/` | **Ya** sampai folder dihapus operator | Siapa pun yang punya link folder          |
+| Pose edit untuk encode MP4        | Browser → OS temp server privat  | Sementara sampai proses selesai/gagal | Proses encoder                            |
+| MP4 sebelum simpan Drive          | Browser memory                   | Tidak setelah refresh                 | Guest                                     |
+| Frame PNG, thumbnail, config JSON | Google Drive `frames/`           | Ya                                    | Admin; published asset via proxy ke guest |
+| QR                                | Browser memory                   | Tidak                                 | Guest saat tab masih aktif                |
+| Admin password hash               | Server environment               | Ya di hosting secret                  | Operator/backend                          |
+| Admin session cookie              | Browser cookie, signed HttpOnly  | Sementara sampai expired              | Admin browser                             |
+| OAuth refresh token               | Server environment               | Ya di hosting secret                  | Backend saja                              |
 
 **Ketepatan istilah:** Foto **bukan** hilang dari Drive saat QR/tab ditutup. Link yang telah dibagikan tetap bisa diakses selama izin file publik masih aktif. Jika operator ingin private-only, arsitektur QR langsung Drive harus diubah ke download proxy dengan token dan expiry; itu **bukan scope MVP**.
 
 ## 2. Privacy notice UI (copy yang disarankan)
 
-> Dengan memilih "Simpan & Buat QR", kamu mengizinkan hasil foto strip diunggah ke Google Drive pengelola. File dapat dibuka siapa saja yang memiliki tautannya. Foto tidak akan otomatis terhapus saat kamu menutup halaman. Simpan atau pindai QR sebelum keluar; hubungi pengelola acara untuk permintaan penghapusan.
+> Saat membuat preview/download MP4, pose yang sudah diedit diproses sementara di server lalu dihapus. Dengan memilih "Simpan ke Drive & buat QR", kamu mengizinkan kolase PNG dan video MP4 disimpan ke folder sesi di Google Drive pengelola. Keduanya dapat dibuka siapa saja yang memiliki tautan folder. Hasil tidak otomatis terhapus saat halaman ditutup. Simpan atau pindai QR sebelum keluar; hubungi pengelola acara untuk penghapusan.
 
 Opsional: operator menambahkan email kontak privacy & kebijakan retensi, tetapi jangan mengisi alamat palsu. Foto dengan anak/remaja perlu consent yang sesuai. Jika event berlangsung publik, tampilkan pemberitahuan yang terlihat dan desain alur yang tidak memaksa upload (user tetap bisa download lokal).
 
@@ -38,7 +42,7 @@ Opsional: operator menambahkan email kontak privacy & kebijakan retensi, tetapi 
 - Random server-generated final filename, not client-supplied path.
 - Upload endpoint may be publicly abused: best-effort per-IP throttling alone isn't sufficient in horizontal/serverless hosting. Add Cloudflare WAF / Turnstile (or comparable anti-abuse protection) before real public deployment at scale.
 - Photo files are human portraits/personal data; never log payload, base64, signed URLs with tokens, or dump file body in errors.
-- Follow least privilege: only final photo files have `anyone:reader` permission. No public OAuth tokens, no folder wide access if not needed.
+- Follow least privilege: hanya folder hasil sesi dengan PNG + MP4 yang mendapat `anyone:reader`; kedua file mewarisi izin tersebut. Root, `photos/` induk dan `frames/` tetap privat. Jangan menaruh file tambahan sensitif dalam folder sesi yang sudah dibagikan.
 
 ## 5. Google Drive & link semantics
 
@@ -55,7 +59,7 @@ CSP restricting scripts/styles/img/connect/media to required origins, `X-Content
 
 ## 7. Failure modes and recovery
 
-- Drive upload success + permission fail: try best-effort delete the inaccessible image or leave for operator cleanup with sanitized log; **no QR**.
+- Upload salah satu file gagal / izin folder atau anak gagal: trash folder sesi dan seluruh anak yang diketahui secara best-effort, log sanitasi bila cleanup gagal; **no QR**. Folder dibagikan hanya setelah dua file lengkap.
 - Admin upload partial success: rollback new assets best-effort; keep prior JSON and active overlay unchanged.
 - Network failure after upload succeeded but response lost: may create duplicate on retry because no database; UI should warn against repeated clicks, keep local copy, use in-flight guard. Log/cleanup tools can dedup by timestamps where possible.
 - Drive quota full: no QR, local download offered, actionable error.

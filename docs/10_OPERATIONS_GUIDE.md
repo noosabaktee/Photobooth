@@ -7,8 +7,8 @@
 3. Klik **Buka kamera** dan izinkan akses. Semua foto diambil melalui kamera. Jika tidak tersedia, periksa izin browser, sambungan kamera, dan HTTPS lalu coba lagi.
 4. Ikuti countdown; ambil foto beberapa kali sesuai slot. Lihat jumlah foto di indikator.
 5. Di preview, pilih foto tertentu untuk **Retake**, atau ulang semua. Tambahkan filter bila perlu.
-6. Klik **Download Local** untuk menyimpan langsung di perangkat. Pilih **Save to Drive & Make QR** bila setuju foto disimpan pada Google Drive milik operator sebagai file yang bisa dibuka siapa saja dengan link.
-7. Setelah upload berhasil, pindai QR memakai kamera HP, buka halaman Google Drive foto, lalu download / simpan.
+6. **Download PNG lokal** menyimpan kolase tanpa mengirim foto ke server. **Preview video** / **Download MP4** memproses foto edit sementara di server, lalu membersihkannya. Filter/mirror/retake membatalkan video lama agar hasil baru sesuai edit.
+7. Pilih **Simpan & bagikan**, berikan consent, lalu **Simpan ke Drive & buat QR**. Setelah dua hasil tersimpan, QR membuka folder sesi Drive berisi kolase PNG dan video MP4. Keduanya bisa dibuka siapa pun yang memiliki link; video dapat ditambahkan ke sosmed setelah download.
 8. Salin link jika scan sulit. **Jangan tutup halaman sebelum mengambil QR**, karena QR tidak tersimpan di website. Jika tertutup, file Drive **tidak hilang** tetapi user tidak mempunyai halaman riwayat untuk mencarinya.
 
 ## B. Admin: login dan tambah frame
@@ -24,7 +24,7 @@
 
 ## C. Operator: folder Drive & file user
 
-Folder `photos/` berisi **satu file final** per sesi upload sukses, nama berisi tanggal dan random ID. Pengguna tidak melihat isi folder; ia hanya menerima link file individual. Admin Drive operator dapat mencari berdasarkan tanggal/filename jika butuh penghapusan. Tidak ada dashboard per-user, email, analytics, atau database.
+Folder `photos/` tetap privat dan berisi **folder per sesi** bernama `Hoya-Hoya-<tanggal>-<uuid>`, dengan `kolase.png` dan `boomerang.mp4`. Hanya folder sesi yang dibagikan melalui QR. Operator dapat mencari folder berdasarkan tanggal/nama dan menghapus atau mencabut sharing folder untuk kedua hasil. Jangan memasukkan file sensitif lain ke folder sesi publik. Tidak ada dashboard per-user, email, analytics, atau database. Hasil PNG lama tidak dihapus/migrasikan otomatis.
 
 ### Jika QR tidak dapat di-scan
 

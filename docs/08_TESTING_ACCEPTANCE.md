@@ -1,5 +1,7 @@
 # 08 — Test plan and acceptance checklist
 
+Pengujian video meliputi MP4 H.264 1080 × 1920/30 fps/enam detik tanpa audio, urutan pose `1 → 2 → 3 → 1 → 2 → 3` (satu detik per foto) dari pixel seluruh 180 frame decode, validasi stream rusak/berlebih, cleanup temp, consent pemrosesan, preview/download dan upload PNG + MP4. QR terbaru menunjuk folder sesi yang terverifikasi; kegagalan upload kedua atau ACL anak membatalkan seluruh hasil. Lihat [13_BOOMERANG.md](13_BOOMERANG.md).
+
 ## 1. Required test scripts
 
 - `npm run lint` — ESLint.
@@ -62,8 +64,8 @@ After operator has configured OAuth:
 - [ ] `drive:bootstrap` creates folders without duplication.
 - [ ] Admin publish frame → JSON+PNG+thumbnail actual files exist in Drive.
 - [ ] Frame preview uses private asset proxy, not anyone sharing of entire frames folder.
-- [ ] Guest final image is exactly one file and matches preview.
-- [ ] File share permission explicitly `anyone:reader` for final photo only.
+- [ ] Folder sesi berisi tepat kolase PNG yang cocok preview dan boomerang MP4; tidak ada foto mentah.
+- [ ] Hanya folder sesi mendapat `anyone:reader`; kedua file mewarisi akses. Root/frames/photos induk tetap privat.
 - [ ] Link/QR opens on a different device without login (incognito).
 - [ ] Copy link / open link / download local controls work.
 - [ ] Closing/reloading page loses QR but file still exists in Drive.

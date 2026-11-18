@@ -149,9 +149,21 @@ for (const viewport of [
         contentType: "application/json",
         body: JSON.stringify({
           mode: "google-drive",
-          fileId: "test-only-layout-id",
-          filename: "test.png",
-          viewUrl: "https://drive.google.com/file/d/test-only-layout-id/view",
+          folderId: "test-only-layout-id",
+          folderName: "test-only-session",
+          files: [
+            {
+              fileId: "test-png",
+              filename: "kolase.png",
+              mimeType: "image/png",
+            },
+            {
+              fileId: "test-mp4",
+              filename: "boomerang.mp4",
+              mimeType: "video/mp4",
+            },
+          ],
+          viewUrl: "https://drive.google.com/drive/folders/test-only-layout-id",
         }),
       }),
     );
@@ -166,7 +178,7 @@ for (const viewport of [
       .getByRole("button", { name: "Simpan ke Drive & buat QR" })
       .click();
     await expect(
-      page.getByAltText("QR link Google Drive hasil foto"),
+      page.getByAltText("QR folder Google Drive kolase dan video"),
     ).toBeVisible();
     await fits(page);
     await page.screenshot({

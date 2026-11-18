@@ -1,6 +1,10 @@
 import { beforeAll, beforeEach, it, expect, vi } from "vitest";
 import { readFile } from "node:fs/promises";
 import argon2 from "argon2";
+import sharp from "sharp";
+import { encodeBoomerang } from "@/lib/video-server";
+import { POST as boomerang } from "@/app/api/boomerang/route";
+let movie: Buffer;
 const { jar } = vi.hoisted(() => ({ jar: new Map<string, string>() }));
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -25,7 +29,15 @@ beforeAll(async () => {
     "route-test-secret-only-12345678901234567890123456789";
   process.env.ADMIN_PASSWORD_HASH = await argon2.hash("six123");
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
-});
+  const frames = await Promise.all(
+    ["#d02030", "#20b050", "#3040df"].map((background) =>
+      sharp({ create: { width: 1080, height: 1920, channels: 3, background } })
+        .jpeg()
+        .toBuffer(),
+    ),
+  );
+  movie = await encodeBoomerang(frames);
+}, 60000);
 beforeEach(() => jar.clear());
 const json = (path: string, body: unknown, origin = "http://localhost:3000") =>
   new Request(`http://localhost:3000${path}`, {
@@ -134,6 +146,11 @@ it("photo endpoint requires origin, consent, real MIME and one final image", asy
   const valid = form();
   valid.set("consent", "true");
   valid.set(
+    "video",
+    new Blob([new Uint8Array(movie)], { type: "video/mp4" }),
+    "boomerang.mp4",
+  );
+  valid.set(
     "photo",
     new Blob(
       [
@@ -154,4 +171,40 @@ it("photo endpoint requires origin, consent, real MIME and one final image", asy
   );
   expect(response.status).toBe(201);
   expect(await response.json()).toMatchObject({ mode: "mock" });
+  // Signature/type checks are real in mock mode too.
+  valid.set(
+    "video",
+    new Blob([new Uint8Array([1, 2, 3])], { type: "video/mp4" }),
+    "bad.mp4",
+  );
+  const invalid = await photo(
+    new Request("http://localhost:3000/api/photos", {
+      method: "POST",
+      headers: { Origin: "http://localhost:3000" },
+      body: valid,
+    }),
+  );
+  expect(invalid.status).toBe(415);
+}, 60000);
+
+it("boomerang endpoint enforces origin, processing consent and bounded JPEG input", async () => {
+  const request = (form: FormData, origin = "http://localhost:3000") =>
+    new Request("http://localhost:3000/api/boomerang", {
+      method: "POST",
+      headers: { Origin: origin },
+      body: form,
+    });
+  expect(
+    (await boomerang(request(new FormData(), "https://evil.test"))).status,
+  ).toBe(403);
+  expect((await boomerang(request(new FormData()))).status).toBe(400);
+  const empty = new FormData();
+  empty.set("processingConsent", "true");
+  expect((await boomerang(request(empty))).status).toBe(400);
+  empty.set(
+    "frames",
+    new Blob(["pretend-jpeg"], { type: "image/jpeg" }),
+    "bad.jpg",
+  );
+  expect((await boomerang(request(empty))).status).toBe(415);
 });

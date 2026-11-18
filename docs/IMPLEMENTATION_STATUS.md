@@ -1,5 +1,24 @@
 # Implementation status — 18 November 2026
 
+## Revisi tempo video — 1 → 2 → 3 → 1 → 2 → 3
+
+- Mengganti efek maju–mundur cepat menjadi slideshow maju berulang. Tiga foto ditampilkan satu detik per foto, dua putaran, total enam detik. Layout custom 1–6 foto tetap mengikuti urutan capture, satu detik per pose, total enam detik.
+- `slideshowOrder` dan encoder concat memakai durasi satu detik serta filter fps/limit 180 frame eksplisit. Regresi decode memeriksa seluruh 180 frame: masing-masing foto tepat 30 frame pada 30 fps, termasuk batas pergantian detik dan putaran kedua.
+- Label UI kini "Preview video" / "Video MP4"; download lokal memakai nama `hoya-hoya-days-kmi-video.mp4`. Endpoint internal dan nama file Drive legacy tetap kompatibel. Dokumentasi video dan API diperbarui; alur folder kolase + video tetap sama.
+- Verifikasi PASS: format, lint, typecheck, 46 unit/integration tests, production build dan satu E2E guest (preview/download MP4, edit dan upload mock). Seluruh 180 frame hasil decode sesuai urutan dan durasi satu detik per foto. Tidak melakukan upload Drive riil baru untuk perubahan tempo ini.
+
+## Revisi hasil — kolase PNG + boomerang MP4 dalam folder Drive
+
+- Implementasi `src/lib/boomerang.ts`, `video-server.ts`, dan `POST /api/boomerang`: enam detik MP4 H.264/yuv420p 1080 × 1920, 30 fps, tanpa audio, urutan tiga pose `1 → 2 → 3 → 2 → 1`. Mendukung layout custom 1–6 foto. Pose edit memakai filter/mirror/crop dari renderer bersama; video memakai kartu event orisinal, tidak meregangkan overlay strip.
+- `src/components/booth.tsx`: preview PNG/MP4, download kedua format, invalidasi video setelah filter/mirror/retake, persetujuan pemrosesan sementara dan Drive, serta QR/link ke folder sesi. Foto/video/QR tetap Blob/state browser tanpa history, hilang saat refresh. PNG lokal tetap bisa diunduh tanpa server.
+- `POST /api/photos` dan adapter storage: validasi tepat satu kolase + satu MP4, folder sesi privat baru, upload dua file sebelum share, validasi URL folder dan ACL folder/anak, rollback best-effort untuk kegagalan parsial. Root/frames/photos induk tidak dipublikasikan. Mock memvalidasi video nyata tanpa menyimpan hasil atau membuat link palsu.
+- Encoder dibatasi dua pekerjaan per proses, timeout subprocess, JPEG/video byte limits, decode media, tanpa shell/input URL, OS temp privat dengan cleanup `finally`; tidak ada database. Binary FFmpeg/FFprobe bundled tersedia via npm, dengan override path sistem untuk produksi. File temp dapat tertinggal jika OS crash/kill paksa; prosedur operator didokumentasikan.
+- Live Drive memakai media sintetis (blok warna dan PNG bertanda uji, tanpa foto pribadi): satu folder sesi berisi tepat `kolase.png` + `boomerang.mp4` berhasil dibuat; ACL ketiga folder induk tetap privat. Browser context baru tanpa login membuka folder dan melihat kedua file; MP4 berhasil diunduh tanpa autentikasi. Screenshot dan metadata hanya di `.qa/` ignored. Folder uji sukses dibiarkan tersedia untuk pemeriksaan operator; sesi uji gagal dibersihkan secara best-effort.
+- Live smoke menemukan propagation delay ACL anak setelah folder dibagikan. `assertPublic` kini melakukan polling terbatas atas ACL sebenarnya sebelum mengembalikan QR, tetap gagal jika izin tidak terverifikasi.
+- README, API contract, arsitektur, privacy, setup Drive, testing, operations, `.env.example`, `DEPLOY.md`, dan `docs/13_BOOMERANG.md` diperbarui. Nginx membutuhkan batas body 32 MiB dan timeout 180 detik. Deployment di server pengguna belum dijalankan dari sesi ini.
+- Verifikasi: 46 unit/integration tests (5 files), 18 E2E Chromium, format/lint/typecheck dan production build PASS. Sembilan viewport kiosk serta fixture QR portrait/landscape tetap muat tanpa scroll setelah perbaikan toolbar dan spacing. E2E memeriksa pixel pose edit (mirror + warm/B&W), invalidasi cache video, MP4 playable dan multipart PNG + MP4. Smoke pada build produksi juga PASS untuk endpoint encode dan upload pasangan mode mock, tanpa link Drive palsu.
+- Saat tab tersembunyi, kamera tetap dihentikan tetapi pekerjaan video/upload mempertahankan status busy sampai selesai agar edit tidak berubah di tengah proses. Regresi browser tambahan PASS memeriksa kontrol edit tetap terkunci ketika encode berjalan. Pemeriksaan akhir OS temp menemukan nol direktori `kmi-boomerang-*` tersisa; `.env.local` dan artefak sintetis `.qa/` tetap ignored Git.
+
 ## Dokumentasi deployment server Linux
 
 - Menambahkan `DEPLOY.md` di root: Ubuntu/Debian, user `iot_gateway`, proyek `/home/iot_gateway/Photobooth`, Next.js `0.0.0.0:3005`, service systemd dan site Nginx bernama `kmi-photobooth`, domain `booth.todays.id`, DNS/HTTPS, pengujian operator, pembaruan dan troubleshooting.

@@ -30,11 +30,14 @@ export function Header() {
 export function Privacy() {
   return (
     <div className="privacy-note">
-      <strong>Momenmu, pilihanmu.</strong> Foto asli diproses di memori browser.
-      Download lokal tersedia tanpa upload. Jika kamu memilih simpan ke Drive
-      pengelola, hasil dapat dibuka siapa saja yang punya link dan tetap
-      tersimpan setelah tab ditutup. QR dan foto di halaman ini hilang saat
-      refresh. Hubungi pengelola acara untuk penghapusan.
+      <strong>Momenmu, pilihanmu.</strong> Foto asli berada di memori browser.
+      Download PNG lokal tersedia tanpa upload. Saat membuat preview/download
+      MP4 atau menyimpan hasil, foto yang sudah diedit dikirim ke server untuk
+      pemrosesan video sementara, lalu file sementara dihapus setelah proses
+      selesai/gagal. Jika kamu memilih simpan ke Drive pengelola, kolase PNG dan
+      video MP4 masuk ke satu folder hasil yang dapat dibuka siapa saja yang
+      punya link dan tetap tersimpan setelah tab ditutup. QR dan foto di halaman
+      ini hilang saat refresh. Hubungi pengelola acara untuk penghapusan.
     </div>
   );
 }

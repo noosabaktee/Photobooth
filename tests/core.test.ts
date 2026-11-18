@@ -9,7 +9,8 @@ import {
   publicFrame,
 } from "@/lib/schema";
 import { cover, mirroredX, replacePhoto, filterPixel } from "@/lib/compositor";
-import { driveViewUrl } from "@/lib/urls";
+import { driveViewUrl, driveFolderUrl } from "@/lib/urls";
+import { slideshowOrder } from "@/lib/boomerang";
 import { checkOrigin, signSession, verifySession, throttle } from "@/lib/auth";
 import {
   validateImage,
@@ -19,7 +20,7 @@ import {
 } from "@/lib/uploads";
 import { MockBackend } from "@/lib/storage/mock";
 import { FrameRepository } from "@/lib/storage/repository";
-import { savePhoto } from "@/lib/storage";
+import { saveSession } from "@/lib/storage";
 import { GoogleDriveBackend, retry } from "@/lib/storage/google-drive";
 import type { drive_v3 } from "googleapis/build/src/apis/drive/v3.js";
 import type { Backend } from "@/lib/storage/backend";
@@ -39,6 +40,31 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe("schema and geometry", () => {
+  it("slideshow plays forward for six one-second poses, including dynamic layouts", () => {
+    expect(slideshowOrder(3)).toEqual([0, 1, 2, 0, 1, 2]);
+    expect(slideshowOrder(1)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(slideshowOrder(6)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(() => slideshowOrder(0)).toThrow();
+    expect(() => slideshowOrder(7)).toThrow();
+  });
+  it("QR only accepts the matching direct Drive session folder", () => {
+    expect(
+      driveFolderUrl(
+        "https://drive.google.com/drive/folders/session_id?usp=sharing",
+        "session_id",
+      ),
+    ).toBeTruthy();
+    for (const url of [
+      "javascript:alert(1)",
+      "https://drive.google.com.evil.test/drive/folders/session_id",
+      "https://user@drive.google.com/drive/folders/session_id",
+      "http://drive.google.com/drive/folders/session_id",
+      "https://drive.google.com/file/d/session_id/view",
+      "https://drive.google.com/drive/folders/other",
+      "https://drive.google.com/drive/folders/session_id/extra",
+    ])
+      expect(driveFolderUrl(url, "session_id")).toBeNull();
+  });
   it("every active starter has exactly three transparent photo areas and no unused hole", async () => {
     for (const frame of manifest.frames) {
       expect(frame.slots).toHaveLength(3);
@@ -297,7 +323,13 @@ describe("storage integration", () => {
   });
   it("demo final upload returns no Drive link and retains no photo bytes", async () => {
     const backend = new MockBackend();
-    const response = await savePhoto(backend, "mock", png, "image/png");
+    const response = await saveSession(
+      backend,
+      "mock",
+      png,
+      "image/png",
+      Buffer.from("test-video"),
+    );
     expect(response).toMatchObject({ mode: "mock" });
     expect(response).not.toHaveProperty("viewUrl");
     expect(backend.files.size).toBe(0);
@@ -306,7 +338,13 @@ describe("storage integration", () => {
     const backend = new MockBackend();
     vi.spyOn(backend, "share").mockRejectedValue(new Error("Workspace policy"));
     await expect(
-      savePhoto(backend, "google-drive", png, "image/png"),
+      saveSession(
+        backend,
+        "google-drive",
+        png,
+        "image/png",
+        Buffer.from("test-video"),
+      ),
     ).rejects.toMatchObject({ code: "SHARING_FAILED" });
     expect(backend.files.size).toBe(0);
   });
@@ -314,20 +352,82 @@ describe("storage integration", () => {
     const backend = new MockBackend();
     vi.spyOn(backend, "create").mockRejectedValue(new Error("quota"));
     await expect(
-      savePhoto(backend, "google-drive", png, "image/png"),
-    ).rejects.toThrow("quota");
+      saveSession(
+        backend,
+        "google-drive",
+        png,
+        "image/png",
+        Buffer.from("test-video"),
+      ),
+    ).rejects.toMatchObject({ code: "SHARING_FAILED" });
   });
-  it("returns verified real Drive result with one uploaded final only", async () => {
+  it("returns a verified session folder containing exactly the collage and MP4", async () => {
     const backend = new MockBackend();
     vi.spyOn(backend, "share").mockImplementation(async (id) => ({
-      viewUrl: `https://drive.google.com/file/d/${id}/view`,
+      viewUrl: `https://drive.google.com/drive/folders/${id}`,
       downloadUrl: null,
     }));
-    const response = await savePhoto(backend, "google-drive", png, "image/png");
+    const verify = vi.spyOn(backend, "assertPublic").mockResolvedValue();
+    const response = await saveSession(
+      backend,
+      "google-drive",
+      png,
+      "image/png",
+      Buffer.from("test-video"),
+    );
     expect(response.mode).toBe("google-drive");
-    expect(backend.files.size).toBe(1);
-    expect([...backend.files.values()][0].folder).toBe("photos");
+    expect(backend.files.size).toBe(3);
+    const folder = [...backend.files.values()].find(
+      (f) => f.mimeType === "application/vnd.google-apps.folder",
+    )!;
+    expect(folder.folder).toBe("photos");
+    const children = [...backend.files.values()].filter(
+      (f) => f.folder === folder.id,
+    );
+    expect(children.map((f) => f.mimeType)).toEqual(["image/png", "video/mp4"]);
+    expect(backend.share).toHaveBeenCalledExactlyOnceWith(folder.id, "folder");
+    expect(verify).toHaveBeenCalledTimes(2);
+    expect(response).toMatchObject({
+      folderId: folder.id,
+      files: [{ filename: "kolase.png" }, { filename: "boomerang.mp4" }],
+    });
   });
+  it.each(["second-file", "inherited-permission", "invalid-url"])(
+    "rolls back the entire session on %s failure",
+    async (failure) => {
+      const backend = new MockBackend();
+      vi.spyOn(backend, "share").mockResolvedValue({
+        viewUrl: "https://drive.google.com/drive/folders/wrong-id",
+        downloadUrl: null,
+      });
+      if (failure !== "invalid-url")
+        vi.mocked(backend.share).mockImplementation(async (id) => ({
+          viewUrl: `https://drive.google.com/drive/folders/${id}`,
+          downloadUrl: null,
+        }));
+      if (failure === "second-file") {
+        const create = backend.createInFolder.bind(backend);
+        vi.spyOn(backend, "createInFolder").mockImplementation(
+          async (...args) => {
+            if (args[2] === "video/mp4") throw new Error("quota");
+            return create(...args);
+          },
+        );
+      }
+      await expect(
+        saveSession(
+          backend,
+          "google-drive",
+          png,
+          "image/png",
+          Buffer.from("test-video"),
+        ),
+      ).rejects.toMatchObject({ code: "SHARING_FAILED" });
+      expect(backend.files.size).toBe(0);
+      if (failure === "second-file")
+        expect(backend.share).not.toHaveBeenCalled();
+    },
+  );
   it("Drive adapter refuses a link when ACL verification fails", async () => {
     const permissions = {
       create: vi.fn().mockResolvedValue({ data: { id: "permission" } }),
@@ -340,9 +440,13 @@ describe("storage integration", () => {
       permissions,
       files: { get },
     } as unknown as drive_v3.Drive);
-    await expect(backend.share("test-file")).rejects.toMatchObject({
+    vi.useFakeTimers();
+    const denied = expect(backend.share("test-file")).rejects.toMatchObject({
       code: "SHARING_DENIED",
     });
+    await vi.runAllTimersAsync();
+    await denied;
+    vi.useRealTimers();
     expect(get).not.toHaveBeenCalled();
     permissions.list.mockResolvedValue({
       data: { permissions: [{ type: "anyone", role: "reader" }] },
@@ -369,6 +473,47 @@ describe("storage integration", () => {
     await vi.runAllTimersAsync();
     await expect(pending).resolves.toBe("ok");
     expect(operation).toHaveBeenCalledTimes(3);
+  });
+  it("waits for inherited access and only accepts an actual folder viewer for a folder result", async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: { permissions: [{ type: "user", role: "owner" }] },
+      })
+      .mockResolvedValue({
+        data: { permissions: [{ type: "anyone", role: "reader" }] },
+      });
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        mimeType: "application/vnd.google-apps.folder",
+        webViewLink: "https://drive.google.com/drive/folders/session-id",
+      },
+    });
+    const backend = new GoogleDriveBackend({
+      permissions: {
+        create: vi.fn().mockResolvedValue({ data: { id: "p" } }),
+        list,
+      },
+      files: { get },
+    } as unknown as drive_v3.Drive);
+    vi.useFakeTimers();
+    const pending = backend.share("session-id", "folder");
+    await vi.runAllTimersAsync();
+    await expect(pending).resolves.toEqual({
+      viewUrl: "https://drive.google.com/drive/folders/session-id",
+      downloadUrl: null,
+    });
+    expect(list).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+    get.mockResolvedValue({
+      data: {
+        mimeType: "application/vnd.google-apps.folder",
+        webViewLink: "https://drive.google.com/file/d/session-id/view",
+      },
+    });
+    await expect(backend.share("session-id", "folder")).rejects.toMatchObject({
+      code: "INVALID_DRIVE_LINK",
+    });
   });
   it("large files use OAuth resumable upload with one preallocated ID", async () => {
     process.env.GOOGLE_DRIVE_PHOTOS_FOLDER_ID = "test-private-folder";

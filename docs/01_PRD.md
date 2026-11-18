@@ -1,5 +1,7 @@
 # 01 — Product Requirements Document (PRD)
 
+**Revisi aktif Hoya-Hoya Days / Kalbe Morinaga Indonesia:** tiga foto kamera, kiosk responsive tanpa scroll, kolase PNG dan video MP4 enam detik. QR membuka folder hasil sesi dengan kedua file, bukan satu file PNG. [13_BOOMERANG.md](13_BOOMERANG.md) dan [API contract](04_API_CONTRACT.md) terbaru menggantikan bagian spesifikasi awal yang menyebut satu foto final saja.
+
 ## 1. Overview
 
 **Nama sementara:** PHOTOBOOTH / SnapStrip (brand bisa diganti).  

@@ -21,19 +21,28 @@ import type { PublicFrame } from "@/lib/schema";
 import {
   drawComposition,
   exportComposition,
+  exportBoomerangFrames,
   loadImage,
   replacePhoto,
   type Photo,
   type Filter,
 } from "@/lib/compositor";
-import { driveViewUrl } from "@/lib/urls";
+import { driveFolderUrl } from "@/lib/urls";
 import { eventIdentity } from "@/lib/event";
 
 type Result =
   | { mode: "mock"; message: string }
-  | { mode: "google-drive"; viewUrl: string; fileId: string; filename: string };
+  | {
+      mode: "google-drive";
+      viewUrl: string;
+      folderId: string;
+      folderName: string;
+      files: { fileId: string; filename: string; mimeType: string }[];
+    };
 const labels = ["Pilih frame", "Jepret", "Review & edit", "Hasilmu"];
 export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
+  const [movie, setMovie] = useState<{ blob: Blob; url: string } | null>(null);
+  const [preview, setPreview] = useState<"photo" | "video">("photo");
   const [reviewPanel, setReviewPanel] = useState<"edit" | "save">("edit");
   const [step, setStep] = useState(0),
     [frame, setFrame] = useState<PublicFrame | null>(null),
@@ -63,6 +72,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     urls = useRef(new Set<string>()),
     uploadLock = useRef(false),
     selectionLock = useRef(false);
+  const network = useRef<AbortController | null>(null);
   const remember = useCallback((blob: Blob) => {
     const url = URL.createObjectURL(blob);
     urls.current.add(url);
@@ -85,11 +95,13 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         stream.current = null;
         setCamera(false);
         setCountdown(null);
-        setBusy("");
+        // Async operations clear their own busy state in finally. Hiding the tab
+        // must not unlock edits while video rendering or Drive upload is pending.
       }
     };
     document.addEventListener("visibilitychange", onHidden);
     return () => {
+      network.current?.abort();
       document.removeEventListener("visibilitychange", onHidden);
       counter.current++;
       stream.current?.getTracks().forEach((t) => t.stop());
@@ -131,7 +143,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
   }, [step, frame, overlay, photos, filter]);
   useEffect(() => {
     if (result?.mode !== "google-drive") return;
-    const value = driveViewUrl(result.viewUrl, result.fileId);
+    const value = driveFolderUrl(result.viewUrl, result.folderId);
     if (!value) return;
     let active = true;
     void QRCode.toDataURL(value, {
@@ -170,6 +182,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         setPhotos([]);
         setStep(1);
         setRendered(null);
+        setMovie(null);
+        setPreview("photo");
         setResult(null);
         setConsent(false);
       } catch (e) {
@@ -314,6 +328,57 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     setRendered(value);
     return value;
   }
+  function invalidateMovie() {
+    if (movie) {
+      URL.revokeObjectURL(movie.url);
+      urls.current.delete(movie.url);
+    }
+    setMovie(null);
+    setPreview("photo");
+  }
+  async function renderMovie() {
+    if (movie) return movie;
+    if (!frame) throw new Error("Pilih frame dahulu.");
+    const images = await exportBoomerangFrames(frame, photos, filter);
+    const form = new FormData();
+    images.forEach((image, i) => form.append("frames", image, `pose-${i}.jpg`));
+    form.set("processingConsent", "true");
+    network.current = new AbortController();
+    const response = await fetch("/api/boomerang", {
+      method: "POST",
+      body: form,
+      cache: "no-store",
+      signal: network.current.signal,
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error?.message || "Video gagal dibuat. Coba lagi.");
+    }
+    const blob = await response.blob();
+    if (blob.type !== "video/mp4") throw new Error("Format video tidak valid.");
+    const value = { blob, url: remember(blob) };
+    setMovie(value);
+    return value;
+  }
+  async function videoAction(download = false) {
+    if (busy) return;
+    setBusy("Membuat video MP4…");
+    setError("");
+    try {
+      const value = await renderMovie();
+      setPreview("video");
+      if (download) {
+        const a = document.createElement("a");
+        a.href = value.url;
+        a.download = "hoya-hoya-days-kmi-video.mp4";
+        a.click();
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
   async function download() {
     setBusy("Membuat PNG resolusi penuh…");
     setError("");
@@ -342,23 +407,28 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         );
       const form = new FormData();
       form.set("photo", output.blob, "final.png");
+      setBusy("Membuat video & mengunggah dua hasil…");
+      const video = await renderMovie();
+      form.set("video", video.blob, "boomerang.mp4");
       form.set("consent", "true");
       form.set("templateId", frame!.id);
+      network.current = new AbortController();
       const response = await requestJson<Result>("/api/photos", {
         method: "POST",
         body: form,
+        signal: network.current.signal,
       });
       if (
         response.mode !== "mock" &&
         (response.mode !== "google-drive" ||
-          !driveViewUrl(response.viewUrl, response.fileId))
+          !driveFolderUrl(response.viewUrl, response.folderId))
       )
         throw new Error("Link Drive tidak valid. Download hasil lokal.");
       setResult(response);
       setStep(3);
     } catch (e) {
       setError(
-        `${(e as Error).message} Hasil masih tersedia selama halaman terbuka. Jika respons terputus setelah upload, retry mungkin membuat file tambahan.`,
+        `${(e as Error).message} Hasil masih tersedia selama halaman terbuka. Jika respons terputus setelah upload, retry mungkin membuat folder tambahan.`,
       );
     } finally {
       uploadLock.current = false;
@@ -372,6 +442,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     setStep(1);
     setError("");
     setRendered(null);
+    invalidateMovie();
     setConsent(false);
   }
   function reset() {
@@ -383,6 +454,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     setFrame(null);
     setOverlay("");
     setRendered(null);
+    setMovie(null);
+    setPreview("photo");
     setResult(null);
     setQr("");
     setConsent(false);
@@ -597,14 +670,51 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         )}
         {step === 2 && frame && (
           <div className="review-layout">
-            <div className="composition-stage">
-              <canvas ref={canvas} aria-label="Preview hasil photo strip" />
+            <div className="output-preview">
+              <div className="output-tabs" aria-label="Jenis preview hasil">
+                <button
+                  disabled={!!busy}
+                  aria-pressed={preview === "photo"}
+                  onClick={() => setPreview("photo")}
+                >
+                  Kolase PNG
+                </button>
+                <button
+                  disabled={!!busy}
+                  aria-pressed={preview === "video"}
+                  onClick={() => void videoAction()}
+                >
+                  Preview video
+                </button>
+              </div>
+              <p className="video-processing-note">
+                MP4 diproses sementara di server.
+              </p>
+              <div className="composition-stage">
+                <canvas
+                  ref={canvas}
+                  hidden={preview !== "photo"}
+                  aria-label="Preview hasil photo strip"
+                />
+                {preview === "video" && movie && (
+                  <video
+                    src={movie.url}
+                    controls
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    aria-label="Preview video MP4"
+                  />
+                )}
+              </div>
             </div>
             <section className="review-controls">
               <p className="eyebrow">THE FINAL LITTLE DETAILS</p>
               <h2>Momen tim yang berkesan.</h2>
               <p>
-                Pilih filter, cek tiap jepretan, lalu bawa pulang ceritanya.
+                Kolase + video. Saat membuat video, foto edit diproses sementara
+                di server lalu dihapus.
               </p>
               <div className="review-tabs" aria-label="Panel review">
                 <button
@@ -634,6 +744,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                             onClick={() => {
                               setFilter(f);
                               setRendered(null);
+                              invalidateMovie();
                               setConsent(false);
                             }}
                             aria-pressed={filter === f}
@@ -696,6 +807,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                           })),
                         );
                         setRendered(null);
+                        invalidateMovie();
                         setConsent(false);
                       }}
                     >
@@ -713,9 +825,10 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                       onChange={(e) => setConsent(e.target.checked)}
                     />
                     <span>
-                      Saya setuju hasil disimpan ke Google Drive pengelola dan
-                      dapat dilihat siapa saja yang memiliki link. Foto di Drive
-                      tidak otomatis terhapus saat tab ditutup.
+                      Saya setuju kolase PNG dan video MP4 disimpan dalam folder
+                      Google Drive pengelola dan dapat dilihat siapa saja yang
+                      memiliki link. Hasil di Drive tidak otomatis terhapus saat
+                      tab ditutup.
                     </span>
                   </label>
                   <Button
@@ -725,8 +838,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                     <Upload size={18} /> Simpan ke Drive & buat QR
                   </Button>
                   <p className="small">
-                    Mode demo akan menampilkan konfirmasi demo tanpa QR atau
-                    penyimpanan Drive.
+                    Satu QR membuka folder berisi kolase PNG dan video MP4. Mode
+                    demo tidak menyimpan ke Drive.
                   </p>
                 </div>
               )}
@@ -746,14 +859,55 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                     Lanjut simpan →
                   </Button>
                 )}
+                {reviewPanel === "save" && (
+                  <Button
+                    variant="secondary"
+                    disabled={!!busy}
+                    onClick={() => void videoAction(true)}
+                  >
+                    <Download size={18} /> Download MP4
+                  </Button>
+                )}
               </div>
             </section>
           </div>
         )}
         {step === 3 && result && rendered && (
           <div className="result-layout">
-            <div className="composition-stage">
-              <img src={rendered.url} alt="Hasil akhir photo strip" />
+            <div className="output-preview">
+              <div className="output-tabs" aria-label="Jenis preview hasil">
+                <button
+                  disabled={!!busy}
+                  aria-pressed={preview === "photo"}
+                  onClick={() => setPreview("photo")}
+                >
+                  Kolase PNG
+                </button>
+                <button
+                  disabled={!!busy}
+                  aria-pressed={preview === "video"}
+                  onClick={() => void videoAction()}
+                >
+                  Video MP4
+                </button>
+              </div>
+              <div className="composition-stage">
+                {preview === "photo" ? (
+                  <img src={rendered.url} alt="Hasil akhir photo strip" />
+                ) : (
+                  movie && (
+                    <video
+                      src={movie.url}
+                      controls
+                      loop
+                      muted
+                      playsInline
+                      preload="metadata"
+                      aria-label="Preview video MP4"
+                    />
+                  )
+                )}
+              </div>
             </div>
             <section className="result-card">
               <span className="success-icon">
@@ -770,14 +924,14 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 </p>
               ) : (
                 <>
-                  <p>Scan QR ini dengan kamera HP.</p>
+                  <p>Scan QR untuk folder kolase PNG + video MP4.</p>
                   {qr && (
                     <img
                       className="qr"
                       src={qr}
                       width={280}
                       height={280}
-                      alt="QR link Google Drive hasil foto"
+                      alt="QR folder Google Drive kolase dan video"
                     />
                   )}
                   <div className="inline-actions">
@@ -814,15 +968,22 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                   disabled={!!busy}
                   onClick={() => void download()}
                 >
-                  <Download size={18} /> Download lokal
+                  <Download size={18} /> PNG
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={!!busy}
+                  onClick={() => void videoAction(true)}
+                >
+                  <Download size={18} /> MP4
                 </Button>
                 <Button variant="ghost" disabled={!!busy} onClick={reset}>
                   <RefreshCw size={17} /> Take another
                 </Button>
               </div>
               <p className="small">
-                Simpan sebelum keluar. QR hilang saat refresh; foto yang sudah
-                di-upload tetap ada di Drive.
+                Simpan sebelum keluar. QR hilang saat refresh; kolase dan video
+                yang sudah di-upload tetap ada di Drive.
               </p>
             </section>
           </div>

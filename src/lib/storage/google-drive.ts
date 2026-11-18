@@ -2,7 +2,7 @@ import { drive_v3 } from "googleapis/build/src/apis/drive/v3.js";
 import { OAuth2Client } from "google-auth-library";
 import { Readable } from "node:stream";
 import { fail } from "../errors";
-import { driveViewUrl } from "../urls";
+import { driveViewUrl, driveFolderUrl } from "../urls";
 import type { Backend, Folder, StoredFile } from "./backend";
 
 export function oauthClient() {
@@ -99,6 +99,54 @@ export class GoogleDriveBackend implements Backend {
     return Buffer.from(response.data as ArrayBuffer);
   }
   async create(folder: Folder, name: string, mimeType: string, bytes: Buffer) {
+    return this.createInFolder(this.folder(folder), name, mimeType, bytes);
+  }
+  async createFolder(folder: Folder, name: string) {
+    const id = (
+      await retry(() =>
+        this.client.files.generateIds({ count: 1, space: "drive" }),
+      )
+    ).data.ids?.[0];
+    if (!id) fail(503, "DRIVE_UNAVAILABLE", "Drive tidak memberi ID folder.");
+    const parent = this.folder(folder);
+    await retry(async () => {
+      try {
+        await this.client.files.create(
+          {
+            requestBody: {
+              id,
+              name,
+              mimeType: "application/vnd.google-apps.folder",
+              parents: [parent],
+            },
+            fields: "id",
+          },
+          { retry: false, timeout: 30000 },
+        );
+      } catch (error) {
+        if (Number((error as { code?: number }).code) !== 409) throw error;
+        const existing = await this.client.files.get({
+          fileId: id,
+          fields: "id,mimeType,parents,trashed",
+        });
+        if (
+          existing.data.mimeType !== "application/vnd.google-apps.folder" ||
+          existing.data.trashed ||
+          !existing.data.parents?.includes(parent)
+        )
+          throw error;
+      }
+    });
+    return id;
+  }
+  async createInFolder(
+    parentId: string,
+    name: string,
+    mimeType: string,
+    bytes: Buffer,
+  ) {
+    if (!/^[\w-]+$/.test(parentId))
+      fail(400, "VALIDATION_ERROR", "Folder tujuan tidak valid.");
     // Preallocate one ID. Retries cannot create a second file, even if the first response is lost.
     const id = (
       await retry(() =>
@@ -123,7 +171,7 @@ export class GoogleDriveBackend implements Backend {
               "X-Upload-Content-Type": mimeType,
               "X-Upload-Content-Length": String(bytes.length),
             },
-            data: { id, name, parents: [this.folder(folder)] },
+            data: { id, name, parents: [parentId] },
             retry: false,
             timeout: 30000,
           });
@@ -153,7 +201,7 @@ export class GoogleDriveBackend implements Backend {
         } else
           await this.client.files.create(
             {
-              requestBody: { id, name, parents: [this.folder(folder)] },
+              requestBody: { id, name, parents: [parentId] },
               media: { mimeType, body: Readable.from(bytes) },
               fields: "id",
             },
@@ -191,7 +239,7 @@ export class GoogleDriveBackend implements Backend {
       }),
     );
   }
-  async share(id: string) {
+  async share(id: string, kind: "file" | "folder" = "file") {
     await retry(() =>
       this.client.permissions.create({
         fileId: id,
@@ -203,47 +251,64 @@ export class GoogleDriveBackend implements Backend {
         fields: "id",
       }),
     );
-    const acl = await retry(() =>
-      this.client.permissions.list({
-        fileId: id,
-        fields: "permissions(type,role)",
-        pageSize: 100,
-      }),
-    );
-    if (
-      !acl.data.permissions?.some(
-        (p) => p.type === "anyone" && p.role === "reader",
-      )
-    )
-      fail(
-        503,
-        "SHARING_DENIED",
-        "Drive belum mengizinkan akses publik. Download lokal atau hubungi operator.",
-      );
+    await this.assertPublic(id);
     const { data } = await retry(() =>
       this.client.files.get({
         fileId: id,
-        fields: "id,webViewLink,webContentLink",
+        fields: "id,mimeType,webViewLink,webContentLink",
       }),
     );
-    const viewUrl = driveViewUrl(data.webViewLink, id);
+    const viewUrl =
+      kind === "folder"
+        ? data.mimeType === "application/vnd.google-apps.folder" &&
+          driveFolderUrl(data.webViewLink, id)
+        : driveViewUrl(data.webViewLink, id);
     if (!viewUrl)
       fail(
         503,
         "INVALID_DRIVE_LINK",
-        "Drive tidak mengembalikan link viewer yang valid.",
+        "Drive tidak mengembalikan link hasil yang valid.",
       );
     let downloadUrl: string | null = null;
-    if (data.webContentLink) {
+    if (kind === "file" && data.webContentLink) {
       const url = new URL(data.webContentLink);
       if (
         url.protocol === "https:" &&
         ["drive.google.com", "drive.usercontent.google.com"].includes(
           url.hostname,
-        )
+        ) &&
+        !url.username &&
+        !url.password &&
+        !url.port
       )
         downloadUrl = url.href;
     }
     return { viewUrl, downloadUrl };
+  }
+  async assertPublic(id: string) {
+    // New folder permissions may take a moment to appear on existing children.
+    // Poll the actual child ACL; never assume inheritance already succeeded.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const acl = await retry(() =>
+        this.client.permissions.list({
+          fileId: id,
+          fields: "permissions(type,role)",
+          pageSize: 100,
+        }),
+      );
+      if (
+        acl.data.permissions?.some(
+          (p) => p.type === "anyone" && p.role === "reader",
+        )
+      )
+        return;
+      if (attempt < 5)
+        await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+    }
+    fail(
+      503,
+      "SHARING_DENIED",
+      "Drive belum mengizinkan akses publik. Download lokal atau hubungi operator.",
+    );
   }
 }

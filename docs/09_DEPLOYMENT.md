@@ -1,5 +1,7 @@
 # 09 — Local development & deployment
 
+Panduan deployment server aktual ada di [DEPLOY.md](../DEPLOY.md): proyek `/home/iot_gateway/Photobooth`, systemd/Nginx `kmi-photobooth`, port 3005. Fitur boomerang membutuhkan FFmpeg/FFprobe (bundled npm atau paket sistem), encoder `libx264`, subprocess dan OS temp writable. Reverse proxy menerima 32 MiB dan timeout 180 detik; kolase maksimum 12 MiB dan MP4 maksimum 16 MiB. Lihat [13_BOOMERANG.md](13_BOOMERANG.md) untuk lifecycle file sementara dan folder hasil sesi.
+
 ## 1. Developer quickstart (once Codex has generated code)
 
 ```bash
@@ -21,7 +23,7 @@ npm run build
 npm run test:e2e
 ```
 
-Scripts must be created by Codex in the actual app; this ZIP is prompt/spec kit only.
+Script aplikasi dan pengujian tersedia di `package.json`; gunakan `npm ci` untuk instalasi sesuai lockfile.
 
 ## 2. Production prerequisites
 

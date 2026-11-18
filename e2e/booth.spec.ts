@@ -39,6 +39,57 @@ test("guest gallery, three photos, retake, export, consent, mock result and refr
   expect(after[2]).not.toBe(before[2]);
   expect(after).toHaveLength(3);
   await page.getByRole("button", { name: "Warm", exact: true }).click();
+  const posePixels: number[][] = [];
+  await page.route("**/api/boomerang", async (route) => {
+    const request = route.request();
+    const form = await new Response(new Uint8Array(request.postDataBuffer()!), {
+      headers: { "Content-Type": request.headers()["content-type"] },
+    }).formData();
+    expect(form.getAll("frames")).toHaveLength(3);
+    const pose = Buffer.from(
+      await (form.getAll("frames")[0] as File).arrayBuffer(),
+    );
+    const sample = await sharp(pose)
+      .extract({ left: 200, top: 900, width: 1, height: 1 })
+      .raw()
+      .toBuffer();
+    posePixels.push([...sample]);
+    if (posePixels.length === 1) {
+      await page.evaluate(() => {
+        Object.defineProperty(document, "hidden", {
+          configurable: true,
+          get: () => true,
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+        Reflect.deleteProperty(document, "hidden");
+      });
+      await expect(
+        page.getByRole("button", { name: "B&W", exact: true }),
+      ).toBeDisabled();
+    }
+    await route.continue();
+  });
+  await page
+    .getByRole("button", { name: "Preview video", exact: true })
+    .click();
+  const movie = page.getByLabel("Preview video MP4");
+  await expect(movie).toBeVisible({ timeout: 60000 });
+  await expect
+    .poll(() => movie.evaluate((v) => (v as HTMLVideoElement).videoWidth))
+    .toBe(1080);
+  expect(await movie.evaluate((v) => (v as HTMLVideoElement).videoHeight)).toBe(
+    1920,
+  );
+  expect(
+    await movie.evaluate((v) => (v as HTMLVideoElement).duration),
+  ).toBeCloseTo(6, 1);
+  // Mirrored blue half of the synthetic camera, with the selected warm filter.
+  expect(posePixels[0][2]).toBeGreaterThan(posePixels[0][0] + 100);
+  expect(posePixels[0][2]).toBeLessThan(210);
+  await page.getByRole("button", { name: "B&W", exact: true }).click();
+  await expect(movie).toHaveCount(0);
+  // The video cache was invalidated; download/upload must use the new B&W poses.
+  await page.getByRole("button", { name: "Kolase PNG", exact: true }).click();
   await page.screenshot({ path: ".qa/review-desktop.png", fullPage: true });
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download PNG lokal" }).click();
@@ -50,11 +101,35 @@ test("guest gallery, three photos, retake, export, consent, mock result and refr
     page.getByRole("button", { name: "Simpan ke Drive & buat QR" }),
   ).toBeDisabled();
   await page.getByRole("checkbox").check();
+  const movieDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download MP4", exact: true }).click();
+  const localVideo = await movieDownload;
+  await localVideo.saveAs(".qa/boomerang-synthetic.mp4");
+  expect(posePixels).toHaveLength(2);
+  expect(Math.max(...posePixels[1]) - Math.min(...posePixels[1])).toBeLessThan(
+    4,
+  );
+  expect(localVideo.suggestedFilename()).toBe("hoya-hoya-days-kmi-video.mp4");
+  const savedVideo = await localVideo.path();
+  const { readFile } = await import("node:fs/promises");
+  expect((await readFile(savedVideo!)).subarray(4, 8).toString()).toBe("ftyp");
+  let uploadedTypes: string[] = [];
+  await page.route("**/api/photos", async (route) => {
+    const request = route.request();
+    const form = await new Response(new Uint8Array(request.postDataBuffer()!), {
+      headers: { "Content-Type": request.headers()["content-type"] },
+    }).formData();
+    uploadedTypes = ["photo", "video"].map(
+      (key) => (form.get(key) as File).type,
+    );
+    await route.continue();
+  });
   await page.getByRole("button", { name: "Simpan ke Drive & buat QR" }).click();
   await expect(
     page.getByRole("heading", { name: /Demo selesai/ }),
   ).toBeVisible();
   await expect(page.getByAltText(/QR link/)).toHaveCount(0);
+  expect(uploadedTypes).toEqual(["image/png", "video/mp4"]);
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Temukan frame favoritmu." }),

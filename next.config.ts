@@ -4,7 +4,12 @@ const config: NextConfig = {
   devIndicators: false,
   turbopack: { root: process.cwd() },
   outputFileTracingRoot: process.cwd(),
-  serverExternalPackages: ["sharp", "argon2"],
+  serverExternalPackages: [
+    "sharp",
+    "argon2",
+    "ffmpeg-static",
+    "ffprobe-static",
+  ],
   async headers() {
     return [
       {

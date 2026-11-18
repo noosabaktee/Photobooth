@@ -57,12 +57,12 @@ Jalankan `npm run admin:hash` dan masukkan password minimal 6 karakter. Hash dan
 
 1. Impor tiga frame event dengan `npm run drive:seed`, atau di admin upload PNG overlay test, buat slot sesuai desain lalu publish.
 2. Buka public page di incognito, lihat frame test.
-3. Jalankan capture kamera → final PNG.
+3. Jalankan tiga capture kamera → kolase PNG dan preview video MP4.
 4. Klik upload consent dan tunggu sukses, simpan hasil test di Drive.
-5. Pastikan satu file final ada di folder `photos/`; foto mentah tiap jepretan tidak diunggah.
+5. Pastikan satu folder sesi di `photos/` berisi tepat `kolase.png` + `boomerang.mp4`; foto mentah tidak disimpan di Drive. Folder sesi saja yang publik, folder induk dan frame tetap privat.
 6. Scan QR dengan HP akun Google yang **berbeda** atau tanpa login / incognito.
-7. Pastikan link Drive dapat dibuka & diunduh. Jika Google Workspace memblokir external sharing, perbaiki policy atau gunakan pendekatan lain — jangan buat QR palsu.
-8. Refresh halaman photobooth; QR hilang, foto tetap di Drive.
+7. Pastikan QR membuka folder dan kedua hasil dapat dibuka/diunduh; putar MP4 setelah preview Drive selesai diproses. Jika Workspace memblokir sharing folder, tampilkan error tanpa QR.
+8. Refresh halaman photobooth; QR/video lokal hilang, hasil tetap di Drive. Tidak perlu bootstrap atau seed ulang folder yang sudah dikonfigurasi untuk fitur ini.
 9. Unpublish frame; tidak tampil pada request gallery berikutnya (implementasi saat ini menggunakan `no-store`).
 10. Hapus hasil test secara manual dari Drive untuk menghemat storage.
 

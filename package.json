@@ -25,6 +25,8 @@
     "argon2": "^0.45.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0",
     "google-auth-library": "^11.3.4",
     "googleapis": "^190.0.0",
     "jose": "^6.2.17",

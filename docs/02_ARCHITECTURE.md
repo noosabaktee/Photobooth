@@ -7,14 +7,16 @@ flowchart TD
   U[Guest browser /booth] -->|GET frame gallery| API[Next.js Route Handlers]
   U -->|getUserMedia client-side| CAM[Browser camera]
   CAM --> R[Canvas compositor in browser]
-  R -->|final PNG + consent| API
+  R -->|edited JPEG poses + processing consent| V[FFmpeg temporary video processing]
+  V -->|MP4 returned to browser memory| U
+  R -->|final PNG + MP4 + Drive consent| API
   A[Admin browser] -->|signed session, CRUD frame| API
   API -->|OAuth refresh token server only| G[Google Drive API]
   G --> FR[frames folder: PNG + thumbnail + per-frame JSON]
-  G --> PH[photos folder: final PNG]
+  G --> PH[photos private / session folder: PNG + MP4]
   API -->|real public viewUrl after share| U
   U --> QR[QR generated in browser state]
-  QR --> PHONE[Phone opens Google Drive viewer]
+  QR --> PHONE[Phone opens shared session folder]
 ```
 
 **Important:** The diagram shows persisted templates and photos in Google Drive, not in a local database. The QR is an in-memory representation of a URL, NOT a permanent record.
@@ -31,7 +33,7 @@ flowchart TD
 
 ## 3. Drive file conventions
 
-**Drive root** created on behalf of OAuth operator. `drive.file` scope works for files created/opened by the application. `frames/` contains `<frameId>.json`, `<frameId>-v1-overlay.png`, `<frameId>-v1-thumb.webp` etc. `photos/` contains randomly named `<YYYY-MM-DD>-<nanoid>.png`. Frame metadata JSON references the Drive file IDs of its immutable asset versions. Do not create one global manifest, avoiding blind overwrites on concurrent admin saves.
+**Drive root** created on behalf of OAuth operator. `drive.file` scope works for files created/opened by the application. `frames/` contains `<frameId>.json`, `<frameId>-v1-overlay.png`, `<frameId>-v1-thumb.webp` etc. `photos/` stays private and contains session folders `Hoya-Hoya-<YYYY-MM-DD>-<uuid>/`, each with `kolase.png` and `boomerang.mp4`. Only the session folder is shared. Frame metadata JSON references immutable asset versions; no global manifest or database.
 
 ### Public gallery read
 
@@ -45,12 +47,12 @@ flowchart TD
 
 ### Public photo write
 
-1. Render full image locally, encode Blob/File, optional `download local` is independent of upload.
-2. User explicitly consents to share-by-link storage, then backend accepts one final image.
-3. Backend verifies its format & dimensions, uploads to `photos` folder.
-4. Backend sets public permission **on that file only**. `type:anyone`, `role:reader`.
-5. Backend gets `webViewLink`, `webContentLink` when available. Return public viewer URL only after permission API indicates success.
-6. Client creates QR **directly to Drive viewer**, not a route in this app. If upload/permission fail, show error, preserve image locally and allow local download.
+1. Render full PNG locally. PNG download does not send any photo to the server.
+2. On preview/download video or Drive save, render edited portrait poses in the browser, send them to `/api/boomerang`, and receive a six-second MP4 back into browser memory. Bounded temporary files are deleted in `finally`; two jobs per process, timeouts, no shell commands, no database.
+3. After explicit Drive consent, send PNG + MP4 to `/api/photos`; verify both media streams before any Drive mutation.
+4. Create a private session folder under private `photos/`, upload the two files, then set `anyone:reader` on **that session folder only**. Verify inherited public access on both children.
+5. Return the actual Drive folder `webViewLink` only after all steps succeed. Roll back the session best-effort on partial failure; never return a QR for incomplete results.
+6. Client validates the exact Drive folder ID and generates QR. Original captures are not stored in Drive. Browser photos/MP4/QR disappear on refresh; uploaded Drive files remain. Request loss can still create a duplicate folder on manual retry.
 
 ### Per-file public link risks
 

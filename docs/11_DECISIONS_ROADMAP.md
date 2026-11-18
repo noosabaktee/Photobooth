@@ -1,5 +1,7 @@
 # 11 — Decisions, constraints, roadmap
 
+**Keputusan tambahan:** boomerang memakai MP4 H.264 1080 × 1920/30 fps/enam detik agar mudah diposting ke sosmed. QR menunjuk folder Drive per sesi dengan kolase PNG + MP4. Pemrosesan video memakai FFmpeg sementara di server; tidak ada database/history. Folder hasil sesi saja yang dibagikan, bukan photos/frames induk. Lihat [13_BOOMERANG.md](13_BOOMERANG.md); keputusan ini menggantikan tabel lama tentang QR per-file.
+
 ## Keputusan final yang berasal dari kebutuhan user
 
 | Pertanyaan                       | Keputusan                                                             |

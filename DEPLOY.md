@@ -24,7 +24,7 @@ Login melalui SSH sebagai `iot_gateway`. Akun ini harus memiliki akses `sudo` se
 
 ```bash
 sudo apt update
-sudo apt install -y nginx curl ca-certificates build-essential certbot python3-certbot-nginx
+sudo apt install -y nginx curl ca-certificates build-essential certbot python3-certbot-nginx ffmpeg
 node -v
 npm -v
 ```
@@ -66,6 +66,8 @@ Pastikan dua nilai ini sesuai:
 ```dotenv
 STORAGE_MODE=google-drive
 NEXT_PUBLIC_APP_URL=https://booth.todays.id
+FFMPEG_PATH=/usr/bin/ffmpeg
+FFPROBE_PATH=/usr/bin/ffprobe
 ```
 
 Isi `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, dan seluruh credential/folder Google Drive dari konfigurasi operator yang sah. Nilai credential asli tidak dicantumkan dalam panduan ini. Jangan commit `.env.local`, membagikan isinya, atau menaruh secret dalam variabel `NEXT_PUBLIC_*`.
@@ -160,7 +162,7 @@ server {
     listen 80;
     server_name booth.todays.id;
 
-    client_max_body_size 20m;
+    client_max_body_size 32m;
 
     location / {
         proxy_pass http://127.0.0.1:3005;
@@ -172,8 +174,8 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
 
         proxy_connect_timeout 10s;
-        proxy_read_timeout 120s;
-        proxy_send_timeout 120s;
+        proxy_read_timeout 180s;
+        proxy_send_timeout 180s;
     }
 }
 ```
@@ -228,9 +230,9 @@ https://booth.todays.id/admin/login
 ```
 
 - Login admin dan periksa koleksi frame.
-- Izinkan kamera, ambil tiga foto, lakukan retake, dan periksa hasil akhir.
-- Berikan consent, upload satu hasil PNG final, dan pindai QR dari HP tanpa login Google.
-- Pastikan file final tersimpan di Drive dan link benar-benar dapat diakses.
+- Izinkan kamera, ambil tiga foto, lakukan retake, dan periksa kolase serta preview/download MP4.
+- Berikan consent, upload hasil, dan pindai QR dari HP tanpa login Google.
+- Pastikan QR membuka folder sesi berisi tepat `kolase.png` dan `boomerang.mp4`. Folder utama dan frame tetap privat.
 - Refresh halaman: foto/QR lokal hilang, file yang telah diunggah tetap ada di Drive.
 - Pastikan service aktif setelah restart server pada waktu pengujian yang disepakati.
 

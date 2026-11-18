@@ -12,5 +12,7 @@ Sumber di bawah digunakan untuk memverifikasi feasibility. Ini bukan library dep
 8. [Google Identity: OAuth 2.0](https://developers.google.com/identity/protocols/oauth2) — refresh token & External Testing expiry.
 9. [Next.js: Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers) — request handlers pada App Router.
 10. [MDN: MediaDevices.getUserMedia()](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia) — browser camera, secure contexts & permissions.
+11. [FFmpeg CLI](https://ffmpeg.org/ffmpeg.html) — concat pose, H.264/MP4, fps, pixel format dan faststart (revisi boomerang 18 November 2026).
+12. [Google Drive: Create and populate folders](https://developers.google.com/workspace/drive/api/guides/folder) — folder sesi dan parent upload; permission inheritance mengikuti rujukan sharing di atas.
 
 **Technical caution:** beberapa halaman Google lama atau contoh lintas versi dapat memiliki kalimat yang tampak bertentangan tentang kepemilikan file oleh service account. Untuk desain My Drive personal, default aman adalah autentikasi sebagai akun pengguna nyata via OAuth offline; bila implementasi menemukan perubahan perilaku, verifikasi dokumen error, storage/quota, dan resource terbaru secara eksplisit.

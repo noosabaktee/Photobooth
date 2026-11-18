@@ -11,5 +11,16 @@ export interface Backend {
   ): Promise<string>;
   update(id: string, bytes: Buffer): Promise<void>;
   remove(id: string): Promise<void>;
-  share(id: string): Promise<{ viewUrl: string; downloadUrl: string | null }>;
+  createFolder(folder: Folder, name: string): Promise<string>;
+  createInFolder(
+    parentId: string,
+    name: string,
+    mimeType: string,
+    bytes: Buffer,
+  ): Promise<string>;
+  assertPublic(id: string): Promise<void>;
+  share(
+    id: string,
+    kind?: "file" | "folder",
+  ): Promise<{ viewUrl: string; downloadUrl: string | null }>;
 }
