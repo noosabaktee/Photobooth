@@ -1,0 +1,164 @@
+{
+  "purpose": "Active three-photo demo variants, derived deterministically from preserved original assets. NOT Google Drive FrameTemplate JSON.",
+  "frames": [
+    {
+      "id": "starter-pink-3",
+      "name": "Pink Gingham",
+      "category": "pastel",
+      "dimensions": {
+        "width": 1200,
+        "height": 2826
+      },
+      "overlayPath": "pink-gingham-3.png",
+      "thumbnailPath": "pink-gingham-3-preview.jpg",
+      "slots": [
+        {
+          "id": "slot-1",
+          "order": 0,
+          "x": 0.09,
+          "y": 0.089171974522293,
+          "width": 0.82,
+          "height": 0.2505312101910828,
+          "borderRadius": 0.013333,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "slot-2",
+          "order": 1,
+          "x": 0.09,
+          "y": 0.3630573248407643,
+          "width": 0.82,
+          "height": 0.2505312101910828,
+          "borderRadius": 0.013333,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "slot-3",
+          "order": 2,
+          "x": 0.09,
+          "y": 0.6369426751592356,
+          "width": 0.82,
+          "height": 0.2505312101910828,
+          "borderRadius": 0.013333,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        }
+      ],
+      "replacesSeedId": "starter-pink-4"
+    },
+    {
+      "id": "starter-film-3",
+      "name": "Vintage Film",
+      "category": "vintage",
+      "dimensions": {
+        "width": 1000,
+        "height": 2486
+      },
+      "overlayPath": "vintage-film-3.png",
+      "thumbnailPath": "vintage-film-3-preview.jpg",
+      "slots": [
+        {
+          "id": "slot-1",
+          "order": 0,
+          "x": 0.155,
+          "y": 0.12067578439259855,
+          "width": 0.69,
+          "height": 0.25502815768302495,
+          "borderRadius": 0.016,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "slot-2",
+          "order": 1,
+          "x": 0.155,
+          "y": 0.40788415124698313,
+          "width": 0.69,
+          "height": 0.25502815768302495,
+          "borderRadius": 0.016,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "slot-3",
+          "order": 2,
+          "x": 0.155,
+          "y": 0.6950925181013676,
+          "width": 0.69,
+          "height": 0.25502815768302495,
+          "borderRadius": 0.016,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        }
+      ],
+      "replacesSeedId": "starter-film-4"
+    },
+    {
+      "id": "starter-mint-3",
+      "name": "Mint Party",
+      "category": "event",
+      "dimensions": {
+        "width": 1200,
+        "height": 2700
+      },
+      "overlayPath": "mint-party-3.png",
+      "thumbnailPath": "mint-party-3-preview.jpg",
+      "slots": [
+        {
+          "id": "slot-1",
+          "order": 0,
+          "x": 0.075,
+          "y": 0.1259259259259259,
+          "width": 0.85,
+          "height": 0.2222222222222222,
+          "borderRadius": 0.016666666666666666,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "slot-2",
+          "order": 1,
+          "x": 0.075,
+          "y": 0.37777777777777777,
+          "width": 0.85,
+          "height": 0.2222222222222222,
+          "borderRadius": 0.016666666666666666,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "slot-3",
+          "order": 2,
+          "x": 0.075,
+          "y": 0.6296296296296297,
+          "width": 0.85,
+          "height": 0.2222222222222222,
+          "borderRadius": 0.016666666666666666,
+          "cropPosition": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        }
+      ],
+      "replacesSeedId": "starter-mint-6"
+    }
+  ]
+}

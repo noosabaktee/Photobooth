@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "f59cf449-4f44-4e12-ab0d-f1fa64aa9f12",
+  "name": "Pink Sweet Four",
+  "slug": "pink-sweet-four",
+  "category": "pastel",
+  "tags": ["pink", "four shots", "cute"],
+  "status": "published",
+  "dimensions": { "width": 1200, "height": 3600 },
+  "revision": 1,
+  "overlay": {
+    "fileId": "REPLACE_WITH_REAL_DRIVE_OVERLAY_FILE_ID",
+    "mimeType": "image/png",
+    "version": 1
+  },
+  "thumbnail": {
+    "fileId": "REPLACE_WITH_REAL_DRIVE_THUMBNAIL_FILE_ID",
+    "mimeType": "image/webp"
+  },
+  "slots": [
+    { "id": "slot-1", "order": 0, "x": 0.09, "y": 0.07, "width": 0.82, "height": 0.195, "borderRadius": 0.006, "cropPosition": { "x": 0.5, "y": 0.5 } },
+    { "id": "slot-2", "order": 1, "x": 0.09, "y": 0.285, "width": 0.82, "height": 0.195, "borderRadius": 0.006, "cropPosition": { "x": 0.5, "y": 0.5 } },
+    { "id": "slot-3", "order": 2, "x": 0.09, "y": 0.5, "width": 0.82, "height": 0.195, "borderRadius": 0.006, "cropPosition": { "x": 0.5, "y": 0.5 } },
+    { "id": "slot-4", "order": 3, "x": 0.09, "y": 0.715, "width": 0.82, "height": 0.195, "borderRadius": 0.006, "cropPosition": { "x": 0.5, "y": 0.5 } }
+  ],
+  "createdAt": "2026-11-16T04:00:00.000Z",
+  "updatedAt": "2026-11-16T04:00:00.000Z"
+}

@@ -1,0 +1,1436 @@
+/* Public kiosk pages occupy the dynamic viewport. Admin keeps its document layout. */
+html:has(.kiosk-shell),
+body:has(.kiosk-shell) {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  scroll-behavior: auto;
+}
+.kiosk-shell {
+  height: 100dvh;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+  padding-top: env(safe-area-inset-top);
+  isolation: isolate;
+}
+.kiosk-shell .site-header {
+  width: 100%;
+  height: 64px;
+  flex: 0 0 64px;
+  padding: 0 clamp(18px, 4vw, 65px);
+  margin: 0 auto;
+}
+.kiosk-shell .site-header nav > a {
+  display: flex;
+}
+.kiosk-footer {
+  flex: 0 0 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 clamp(18px, 4vw, 65px);
+  font-size: 11px;
+  color: var(--muted);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.kiosk-footer button,
+.kiosk-footer a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+}
+.kiosk-footer button {
+  margin-left: auto;
+}
+.kiosk-dialog {
+  padding: 24px;
+  max-height: calc(100dvh - 24px);
+  max-width: min(480px, calc(100vw - 24px));
+  overflow: auto;
+}
+.kiosk-dialog h2 {
+  font-size: 26px;
+}
+.kiosk-dialog .privacy-note {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.kiosk-dialog .privacy-note strong {
+  display: none;
+}
+.kiosk-dialog .button {
+  margin-top: 20px;
+}
+.kiosk-dialog > p {
+  font-size: 13px;
+}
+.kiosk-shell .landing-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  position: relative;
+}
+.kiosk-shell .hero {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kiosk-shell .hero-content {
+  padding: 24px 18px;
+  margin: 0;
+  max-width: min(720px, 65%);
+}
+.kiosk-shell .hero h1 {
+  font-size: clamp(42px, min(6vw, 8dvh), 82px);
+}
+.kiosk-shell .hero .eyebrow {
+  margin-bottom: clamp(10px, 2dvh, 24px);
+}
+.kiosk-shell .hero-content > p {
+  margin: clamp(12px, 2.5dvh, 26px) 0;
+  font-size: clamp(12px, 1.7dvh, 15px);
+}
+.kiosk-shell .hero-caption {
+  margin-top: 14px;
+}
+.kiosk-shell .hero-bottom {
+  bottom: 12px;
+  align-items: center;
+}
+.kiosk-shell .hero-bottom a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.kiosk-shell .paper-strip {
+  width: clamp(90px, 12vw, 172px);
+  top: 50%;
+  transform: translateY(-50%) rotate(-12deg);
+}
+.kiosk-shell .strip-right {
+  transform: translateY(-45%) rotate(12deg);
+}
+.kiosk-shell .paper-strip .illustration-photo {
+  height: clamp(56px, 15dvh, 137px);
+}
+.kiosk-shell .hero-sticker {
+  bottom: 65px;
+  left: 25%;
+  font-size: 13px;
+}
+.kiosk-shell .spark-one {
+  top: 25px;
+  font-size: clamp(30px, 6dvh, 65px);
+}
+.kiosk-shell .spark-two {
+  bottom: 60px;
+  font-size: clamp(35px, 6dvh, 70px);
+}
+.kiosk-shell .how-section {
+  flex: 1;
+  min-height: 0;
+  padding: clamp(16px, 4dvh, 50px) clamp(8px, 3vw, 40px);
+  width: 100%;
+  gap: 30px;
+}
+.kiosk-shell .how-cta {
+  align-self: center;
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+.kiosk-shell .how-card {
+  min-height: 0;
+}
+.kiosk-shell .how-card > svg {
+  margin: 15px 0 20px;
+}
+.kiosk-shell .collections {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: clamp(8px, 2dvh, 22px) clamp(4px, 3vw, 35px);
+}
+.kiosk-shell .section-heading {
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.kiosk-shell .section-heading .eyebrow {
+  margin-bottom: 6px;
+}
+.kiosk-shell .section-heading h2 {
+  font-size: clamp(26px, 4dvh, 40px);
+}
+.gallery-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.gallery-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+.gallery-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.gallery-filter select {
+  height: 44px;
+  border: 1px solid var(--line);
+  background: #fffdf7;
+  border-radius: 8px;
+  padding: 0 28px 0 12px;
+  color: var(--ink);
+  max-width: 180px;
+  text-transform: capitalize;
+}
+.gallery-demo {
+  font-size: 10px;
+  background: #f8edd3;
+  color: #72552b;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+.kiosk-shell .gallery-grid {
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: clamp(12px, 2vw, 25px);
+  padding: 3px;
+}
+.kiosk-shell .frame-card {
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+.kiosk-shell .frame-stage {
+  height: auto;
+  min-height: 0;
+  padding: 20px;
+}
+.kiosk-shell .frame-stage > img {
+  height: 100%;
+  width: 100%;
+  max-width: 85%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: none;
+}
+.kiosk-shell .frame-card .frame-stage > img {
+  transform: none;
+}
+.kiosk-shell .frame-caption {
+  min-height: 58px;
+  padding-top: 8px;
+  align-items: center;
+  gap: 8px;
+}
+.kiosk-shell .frame-caption .frame-title {
+  font-size: clamp(14px, 1.6vw, 21px);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.25;
+}
+.kiosk-shell .frame-caption .frame-category {
+  font-size: 9px;
+  margin-bottom: 3px;
+}
+.kiosk-shell .frame-caption .frame-arrow {
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: #fffdf7;
+}
+.gallery-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  flex-shrink: 0;
+  min-height: 44px;
+}
+.gallery-pagination .button {
+  padding: 0;
+  width: 44px;
+  min-height: 44px;
+}
+.gallery-pagination span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.kiosk-shell .frame-skeleton {
+  height: auto;
+  min-height: 0;
+}
+.gallery-panel > .empty {
+  margin: auto;
+  font-size: 13px;
+  padding: 20px;
+}
+.gallery-panel > .error {
+  margin: 0;
+  font-size: 12px;
+}
+.kiosk-shell .booth-main {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 8px clamp(14px, 3vw, 40px);
+  position: relative;
+}
+.booth-session {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+.booth-workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.booth-session[data-step="3"] .booth-heading {
+  display: none;
+}
+.kiosk-shell .stepper {
+  margin: 0;
+  gap: clamp(15px, 4vw, 45px);
+  min-height: 30px;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.kiosk-shell .booth-heading {
+  margin: 0;
+  flex-shrink: 0;
+}
+.kiosk-shell .booth-heading .eyebrow {
+  display: none;
+}
+.kiosk-shell .booth-heading h1 {
+  font-size: clamp(20px, 3.8dvh, 34px);
+  margin: 0 0 3px;
+}
+.kiosk-shell .booth-heading > p {
+  font-size: 11px;
+}
+.kiosk-shell .booth-session > .demo-label {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 3px 8px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.kiosk-message {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(100%, 720px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #b8d9c4;
+  border-radius: 10px;
+  background: #e1f3e6;
+  box-shadow: 0 4px 22px #264a3826;
+  padding: 4px 12px;
+}
+.kiosk-message.is-error {
+  background: #fff0f1;
+  border-color: #e5b4bd;
+  color: #8e2946;
+}
+.kiosk-message > p {
+  font-size: 12px;
+  line-height: 1.5;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.kiosk-message > button {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  color: inherit;
+}
+.kiosk-shell .busy {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  background: #fffdf7;
+  box-shadow: 0 2px 18px #264a3830;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin: 0;
+  max-width: 95%;
+  font-size: 12px;
+  pointer-events: none;
+}
+.kiosk-shell .capture-layout {
+  height: 100%;
+  min-height: 0;
+  gap: clamp(12px, 3vw, 35px);
+  grid-template-columns: minmax(0, 1.8fr) minmax(210px, 1fr);
+}
+.kiosk-shell .camera-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 4px;
+}
+.kiosk-shell .camera-viewport {
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+.kiosk-shell .camera-placeholder {
+  gap: 12px;
+  padding: 12px;
+}
+.kiosk-shell .camera-placeholder h2 {
+  font-size: clamp(17px, 3dvh, 26px);
+}
+.kiosk-shell .camera-placeholder p {
+  font-size: 12px;
+}
+.kiosk-shell .camera-toolbar {
+  padding: 0;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+.kiosk-shell .camera-actions {
+  flex-shrink: 0;
+}
+.kiosk-shell .camera-panel > .field {
+  flex-shrink: 0;
+  gap: 2px;
+  font-size: 10px;
+}
+.kiosk-shell .capture-sidebar {
+  padding: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.kiosk-shell .capture-sidebar h2 {
+  font-size: clamp(20px, 3.2dvh, 32px);
+}
+.kiosk-shell .capture-sidebar > p {
+  margin: 0;
+  font-size: 12px;
+}
+.kiosk-shell .capture-thumbs {
+  margin: 0;
+  gap: 6px;
+  max-height: 240px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex-shrink: 1;
+  min-height: 0;
+}
+.kiosk-shell .capture-thumbs > div {
+  min-height: 0;
+  max-height: 220px;
+  aspect-ratio: 3 / 4;
+  font-size: clamp(22px, 3vw, 38px);
+}
+.kiosk-shell .capture-sidebar > .button {
+  flex-shrink: 0;
+}
+.kiosk-shell .review-layout,
+.kiosk-shell .result-layout {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 1050px;
+  gap: clamp(16px, 4vw, 55px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 1fr);
+}
+.kiosk-shell .composition-stage {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  padding: 16px;
+}
+.kiosk-shell .composition-stage > canvas,
+.kiosk-shell .composition-stage > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  max-height: 100%;
+  max-width: 100%;
+  box-shadow: none;
+}
+.kiosk-shell .review-controls {
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  gap: 8px;
+  justify-content: center;
+}
+.kiosk-shell .review-controls > .eyebrow {
+  display: none;
+}
+.kiosk-shell .review-controls > h2 {
+  font-size: clamp(22px, 3.5dvh, 34px);
+}
+.kiosk-shell .review-controls > p {
+  font-size: 12px;
+}
+.review-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: #e9eee3;
+  border-radius: 8px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.review-tabs > button {
+  min-height: 44px;
+  font-size: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 6px 8px;
+  color: var(--muted);
+}
+.review-tabs > button[aria-pressed="true"] {
+  background: var(--teal);
+  color: white;
+}
+.review-editor,
+.review-save {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.kiosk-shell .filter-fieldset legend {
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.kiosk-shell .filter-options {
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.kiosk-shell .filter-options button {
+  flex: 1;
+  min-width: 0;
+  padding: 6px;
+  min-height: 44px;
+}
+.kiosk-shell .retake-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  min-height: 44px;
+  max-height: 100px;
+}
+.kiosk-shell .retake-grid button {
+  min-height: 44px;
+  max-height: 100px;
+  min-width: 0;
+}
+.kiosk-shell .review-editor > .inline-actions {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+.kiosk-shell .review-editor > .inline-actions .button {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 6px;
+  min-height: 44px;
+}
+.review-download {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.review-download .button {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 8px;
+}
+.kiosk-shell .consent {
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px;
+  gap: 10px;
+}
+.kiosk-shell .review-save > .button {
+  flex-shrink: 0;
+  font-size: 13px;
+  padding: 9px;
+}
+.kiosk-shell .review-save > .small {
+  font-size: 10px !important;
+}
+.kiosk-shell .result-card {
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  gap: 8px;
+  justify-content: center;
+}
+.kiosk-shell .result-card h2 {
+  font-size: clamp(21px, 3.5dvh, 32px);
+}
+.kiosk-shell .result-card > p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.kiosk-shell .result-card .qr {
+  width: clamp(192px, 28dvh, 240px);
+  height: clamp(192px, 28dvh, 240px);
+  flex-shrink: 0;
+}
+.kiosk-shell .result-card .success-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+.kiosk-shell .result-card .inline-actions,
+.result-downloads {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: 100%;
+  flex-shrink: 0;
+}
+.kiosk-shell .result-card .button {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  min-height: 44px;
+  padding: 8px 6px;
+  gap: 6px;
+}
+.kiosk-shell .result-card .demo-label {
+  margin: 0;
+  padding: 10px;
+  font-size: 12px;
+}
+@media (max-width: 800px) {
+  .kiosk-shell .site-header {
+    height: 56px;
+    flex-basis: 56px;
+  }
+  .kiosk-shell .hero-content {
+    max-width: 70%;
+  }
+  .kiosk-shell .hero h1 {
+    font-size: clamp(38px, min(7vw, 8dvh), 62px);
+    letter-spacing: -2px;
+  }
+  .kiosk-shell .hero h1 em {
+    letter-spacing: -2px;
+  }
+  .kiosk-shell .hero-sticker {
+    left: 35%;
+    font-size: 12px;
+  }
+  .kiosk-shell .paper-strip {
+    width: 100px;
+  }
+  .kiosk-shell .paper-strip .illustration-photo {
+    height: min(14dvh, 92px);
+  }
+  .kiosk-shell .how-section {
+    gap: 15px;
+  }
+  .kiosk-shell .how-card {
+    padding: 14px;
+  }
+  .kiosk-shell .how-number {
+    right: 0;
+  }
+  .kiosk-shell .review-controls > p {
+    display: none;
+  }
+  .kiosk-shell .review-layout,
+  .kiosk-shell .result-layout {
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1.4fr);
+  }
+  .kiosk-shell .capture-layout {
+    grid-template-columns: minmax(0, 1.5fr) minmax(210px, 1fr);
+  }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .kiosk-shell .site-header {
+    height: 52px;
+    flex-basis: 52px;
+    padding: 0 16px;
+    gap: 10px;
+  }
+  .kiosk-shell .brand {
+    font-size: 22px;
+    gap: 6px;
+  }
+  .kiosk-shell .brand-icon {
+    height: 29px;
+    width: 29px;
+  }
+  .kiosk-shell .site-header nav {
+    gap: 14px;
+    font-size: 11px;
+  }
+  .kiosk-shell .site-header nav > a {
+    display: flex;
+  }
+  .kiosk-shell .site-header nav > .nav-booth {
+    display: none;
+  }
+  .kiosk-footer {
+    padding-inline: 16px;
+    gap: 10px;
+  }
+  .kiosk-footer > span {
+    display: none;
+  }
+  .kiosk-footer button {
+    margin-left: 0;
+  }
+  .kiosk-footer > a {
+    margin-left: auto;
+  }
+  .kiosk-shell .landing-main {
+    padding: 0 10px;
+  }
+  .kiosk-shell .hero-content {
+    max-width: 100%;
+    width: 100%;
+    padding: 0 18px 12dvh;
+  }
+  .kiosk-shell .hero h1 {
+    font-size: clamp(37px, 7dvh, 58px);
+    letter-spacing: -2.5px;
+  }
+  .kiosk-shell .hero h1 em {
+    letter-spacing: -2.5px;
+  }
+  .kiosk-shell .hero-content > p {
+    font-size: 12px;
+    max-width: 290px;
+    margin: 16px auto;
+  }
+  .kiosk-shell .hero .eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.4px;
+  }
+  .kiosk-shell .hero-caption {
+    font-size: 9px;
+  }
+  .kiosk-shell .paper-strip {
+    top: auto;
+    bottom: -25px;
+    transform: rotate(-16deg);
+    width: clamp(64px, 20vw, 95px);
+    padding: 6px 6px 16px;
+  }
+  .kiosk-shell .strip-left {
+    left: 4%;
+  }
+  .kiosk-shell .strip-right {
+    right: 4%;
+    transform: rotate(15deg);
+  }
+  .kiosk-shell .paper-strip .illustration-photo {
+    height: clamp(42px, 8dvh, 80px);
+    margin-bottom: 5px;
+  }
+  .kiosk-shell .paper-strip span {
+    font-size: 9px;
+  }
+  .kiosk-shell .hero-sticker {
+    bottom: 65px;
+    left: 37%;
+    font-size: 10px;
+  }
+  .kiosk-shell .hero-bottom {
+    bottom: 7px;
+    font-size: 8px;
+    justify-content: center;
+  }
+  .kiosk-shell .hero-bottom > span {
+    display: none;
+  }
+  .kiosk-shell .hero-bottom > a {
+    margin: auto;
+    position: relative;
+    z-index: 4;
+  }
+  .kiosk-shell .spark-one {
+    left: 5%;
+    top: 18px;
+    font-size: 30px;
+  }
+  .kiosk-shell .spark-two {
+    right: 7%;
+    bottom: 30%;
+    font-size: 35px;
+  }
+  .kiosk-shell .how-section {
+    padding: 16px 12px;
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+  }
+  .kiosk-shell .section-intro h2 {
+    font-size: 30px;
+  }
+  .kiosk-shell .section-intro .eyebrow {
+    margin-bottom: 8px;
+    font-size: 8px;
+  }
+  .kiosk-shell .section-intro > p:last-child {
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .kiosk-shell .how-steps {
+    gap: 0;
+    grid-template-columns: 1fr;
+  }
+  .kiosk-shell .how-card {
+    padding: 14px 0 14px 45px;
+  }
+  .kiosk-shell .how-card > svg {
+    top: 18px;
+    left: 0;
+    margin: 0;
+    width: 22px;
+  }
+  .kiosk-shell .how-card h3 {
+    font-size: 14px;
+  }
+  .kiosk-shell .how-card p {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .kiosk-shell .how-number {
+    top: 14px;
+    font-size: 13px;
+  }
+  .kiosk-shell .how-cta {
+    margin-bottom: 8px;
+  }
+  .kiosk-shell .collections {
+    padding: 8px 5px;
+  }
+  .kiosk-shell .section-heading {
+    margin-bottom: 8px;
+  }
+  .kiosk-shell .section-heading .eyebrow,
+  .kiosk-shell .section-heading > span {
+    display: none;
+  }
+  .kiosk-shell .section-heading h2 {
+    font-size: 27px;
+  }
+  .gallery-panel {
+    gap: 8px;
+  }
+  .gallery-filter {
+    font-size: 11px;
+    gap: 6px;
+  }
+  .gallery-filter select {
+    max-width: 145px;
+  }
+  .gallery-demo {
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+  .kiosk-shell .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .kiosk-shell .frame-stage {
+    padding: 16px 10px;
+  }
+  .kiosk-shell .frame-caption {
+    min-height: 66px;
+    gap: 4px;
+  }
+  .kiosk-shell .frame-caption .frame-title {
+    font-size: 14px;
+  }
+  .kiosk-shell .frame-caption .frame-category {
+    font-size: 8px;
+  }
+  .kiosk-shell .frame-caption .frame-arrow {
+    flex-basis: 44px;
+  }
+  .kiosk-shell .frame-index {
+    font-size: 13px;
+    top: 10px;
+    left: 10px;
+  }
+  .kiosk-shell .shot-badge {
+    font-size: 8px;
+    bottom: 10px;
+    right: 8px;
+  }
+  .gallery-pagination {
+    gap: 12px;
+  }
+  .kiosk-shell .booth-main {
+    padding: 5px 12px;
+  }
+  .booth-session {
+    gap: 6px;
+  }
+  .kiosk-shell .stepper {
+    gap: 10px;
+    justify-content: space-around;
+    min-height: 30px;
+  }
+  .kiosk-shell .stepper li {
+    flex-direction: row;
+    font-size: 9px;
+    gap: 5px;
+  }
+  .kiosk-shell .stepper li > span {
+    width: 22px;
+    height: 22px;
+  }
+  .kiosk-shell .booth-heading h1 {
+    font-size: 20px;
+  }
+  .kiosk-shell .booth-heading > p {
+    font-size: 10px;
+  }
+  .kiosk-shell .booth-session > .demo-label {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  .kiosk-shell .capture-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .kiosk-shell .camera-placeholder > svg {
+    height: 32px;
+    width: 32px;
+  }
+  .kiosk-shell .camera-placeholder p {
+    font-size: 11px;
+  }
+  .kiosk-shell .camera-toolbar .button {
+    font-size: 11px;
+    min-height: 44px;
+  }
+  .kiosk-shell .camera-actions .button {
+    font-size: 12px;
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+  .kiosk-shell .capture-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: clamp(58px, 11dvh, 94px) 44px;
+    gap: 4px 8px;
+    align-items: stretch;
+  }
+  .kiosk-shell .capture-sidebar > h2,
+  .kiosk-shell .capture-sidebar > p {
+    display: none;
+  }
+  .kiosk-shell .capture-thumbs {
+    grid-column: 1/-1;
+    grid-row: 1;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    height: 100%;
+    max-height: none;
+    gap: 5px;
+  }
+  .kiosk-shell .capture-thumbs > div {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+  .kiosk-shell .capture-sidebar > .button {
+    grid-column: auto;
+    grid-row: 2;
+    font-size: 11px;
+    padding: 6px;
+    min-height: 44px;
+  }
+  .kiosk-shell .capture-sidebar > .button:last-child {
+    grid-row: 2;
+  }
+  .kiosk-shell .review-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.6fr);
+    gap: 8px;
+  }
+  .kiosk-shell .composition-stage {
+    padding: 8px;
+  }
+  .kiosk-shell .review-controls {
+    gap: 5px;
+  }
+  .kiosk-shell .review-controls > h2 {
+    font-size: 22px;
+  }
+  .review-editor,
+  .review-save {
+    gap: 6px;
+  }
+  .kiosk-shell .filter-fieldset legend {
+    display: none;
+  }
+  .kiosk-shell .retake-grid {
+    height: 50px;
+    max-height: 50px;
+    gap: 4px;
+  }
+  .kiosk-shell .retake-grid button {
+    aspect-ratio: auto;
+    height: 50px;
+  }
+  .kiosk-shell .retake-grid span {
+    min-height: 20px;
+    font-size: 8px;
+  }
+  .kiosk-shell .retake-grid span > svg {
+    display: none;
+  }
+  .review-download {
+    gap: 6px;
+  }
+  .review-download .button {
+    font-size: 11px;
+    padding: 6px;
+    gap: 5px;
+    min-height: 44px;
+  }
+  .kiosk-shell .consent {
+    font-size: 11px;
+    padding: 9px;
+    line-height: 1.6;
+  }
+  .kiosk-shell .review-save > .button {
+    font-size: 12px;
+    padding: 8px;
+  }
+  .kiosk-shell .result-layout {
+    grid-template-columns: minmax(50px, 0.28fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+  .kiosk-shell .result-layout .composition-stage {
+    padding: 5px;
+  }
+  .kiosk-shell .result-card {
+    gap: 5px;
+  }
+  .kiosk-shell .result-card .success-icon {
+    display: none;
+  }
+  .kiosk-shell .result-card h2 {
+    font-size: 23px;
+  }
+  .kiosk-shell .result-card > p {
+    font-size: 11px;
+  }
+  .kiosk-shell .result-card .qr {
+    height: clamp(192px, 29dvh, 224px);
+    width: clamp(192px, 29dvh, 224px);
+  }
+  .kiosk-shell .result-card .small {
+    font-size: 10px !important;
+    line-height: 1.5;
+  }
+  .kiosk-shell .result-card .button {
+    font-size: 10px;
+    gap: 5px;
+    padding: 6px;
+  }
+  .kiosk-shell .result-card .button svg {
+    height: 15px;
+    width: 15px;
+    flex-shrink: 0;
+  }
+}
+@media (max-height: 700px) {
+  .kiosk-shell .review-controls > h2 {
+    display: none;
+  }
+  .kiosk-shell .review-controls > p {
+    display: none;
+  }
+  .kiosk-shell .result-card .success-icon {
+    display: none;
+  }
+  .kiosk-shell .hero-sticker {
+    display: none;
+  }
+  .kiosk-shell .hero-cta {
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+  .kiosk-shell .hero-content > p {
+    margin-block: 12px;
+  }
+  .kiosk-shell .hero-caption {
+    margin-top: 12px;
+  }
+  .kiosk-shell .capture-sidebar .small {
+    display: none;
+  }
+  .kiosk-shell .how-card > svg {
+    margin: 10px 0;
+  }
+  .kiosk-shell .how-card h3 {
+    font-size: 16px;
+  }
+  .kiosk-shell .how-card p {
+    font-size: 11px;
+  }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .kiosk-shell .site-header {
+    height: 44px;
+    flex-basis: 44px;
+  }
+  .kiosk-shell .site-header .brand {
+    font-size: 22px;
+  }
+  .kiosk-footer {
+    height: 32px;
+    flex-basis: 32px;
+    min-height: 32px;
+    font-size: 9px;
+  }
+  .kiosk-footer > button,
+  .kiosk-footer > a {
+    min-height: 32px;
+  }
+  .kiosk-shell .hero-content {
+    padding: 6px 14px;
+    max-width: 75%;
+  }
+  .kiosk-shell .hero h1 {
+    font-size: clamp(28px, 7.5dvh, 40px);
+    letter-spacing: -1.5px;
+  }
+  .kiosk-shell .hero h1 em {
+    letter-spacing: -1.5px;
+  }
+  .kiosk-shell .hero .eyebrow {
+    font-size: 8px;
+    margin-bottom: 6px;
+  }
+  .kiosk-shell .hero-content > p {
+    font-size: 11px;
+    margin: 8px 0;
+  }
+  .kiosk-shell .hero-caption {
+    display: none;
+  }
+  .kiosk-shell .hero-bottom {
+    display: none;
+  }
+  .kiosk-shell .hero-cta {
+    font-size: 12px;
+    padding: 8px 18px;
+  }
+  .kiosk-shell .paper-strip {
+    width: 80px;
+  }
+  .kiosk-shell .paper-strip .illustration-photo {
+    height: 45px;
+  }
+  .kiosk-shell .hero-spark {
+    display: none;
+  }
+  .kiosk-shell .how-section {
+    grid-template-columns: 1fr 2.4fr;
+    gap: 16px;
+    padding: 8px 16px;
+  }
+  .kiosk-shell .section-intro h2 {
+    font-size: 26px;
+  }
+  .kiosk-shell .section-intro > p:last-child {
+    display: none;
+  }
+  .kiosk-shell .section-intro .eyebrow {
+    font-size: 8px;
+    margin-bottom: 8px;
+  }
+  .kiosk-shell .how-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .kiosk-shell .how-card {
+    padding: 10px;
+    min-height: 0;
+  }
+  .kiosk-shell .how-card h3 {
+    font-size: 14px;
+  }
+  .kiosk-shell .how-cta {
+    margin-bottom: 6px;
+  }
+  .kiosk-shell .section-heading {
+    margin-bottom: 6px;
+  }
+  .kiosk-shell .section-heading .eyebrow,
+  .kiosk-shell .section-heading > span {
+    display: none;
+  }
+  .kiosk-shell .section-heading h2 {
+    font-size: 24px;
+  }
+  .kiosk-shell .collections {
+    padding: 4px 16px;
+  }
+  .gallery-panel {
+    gap: 4px;
+  }
+  .kiosk-shell .frame-stage {
+    padding: 12px;
+  }
+  .kiosk-shell .frame-caption {
+    min-height: 44px;
+    padding-top: 4px;
+  }
+  .kiosk-shell .frame-caption .frame-category {
+    display: none;
+  }
+  .kiosk-shell .frame-caption .frame-title {
+    font-size: 14px;
+  }
+  .kiosk-shell .frame-index {
+    font-size: 12px;
+    top: 7px;
+    left: 7px;
+  }
+  .kiosk-shell .shot-badge {
+    bottom: 5px;
+    right: 5px;
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+  .gallery-pagination {
+    min-height: 44px;
+  }
+  .kiosk-shell .booth-main {
+    padding: 4px 18px;
+  }
+  .booth-session {
+    gap: 4px;
+  }
+  .kiosk-shell .stepper {
+    min-height: 24px;
+    font-size: 10px;
+  }
+  .kiosk-shell .stepper li > span {
+    width: 21px;
+    height: 21px;
+  }
+  .kiosk-shell .booth-heading {
+    display: none;
+  }
+  .kiosk-shell .booth-session > .demo-label {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+  .kiosk-shell .capture-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: min-content;
+    gap: 5px;
+    align-content: center;
+  }
+  .kiosk-shell .capture-sidebar h2,
+  .kiosk-shell .capture-sidebar > p {
+    display: none;
+  }
+  .kiosk-shell .capture-thumbs {
+    grid-column: 1/-1;
+    height: clamp(56px, 18dvh, 85px);
+    max-height: 85px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .kiosk-shell .capture-thumbs > div {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+  .kiosk-shell .capture-sidebar > .button {
+    font-size: 11px;
+    padding: 6px;
+    min-height: 44px;
+  }
+  .kiosk-shell .camera-placeholder {
+    gap: 6px;
+  }
+  .kiosk-shell .camera-placeholder > svg {
+    display: none;
+  }
+  .kiosk-shell .camera-placeholder h2 {
+    font-size: 18px;
+  }
+  .kiosk-shell .camera-toolbar {
+    min-height: 44px;
+  }
+  .kiosk-shell .camera-toolbar .button,
+  .kiosk-shell .camera-actions .button {
+    font-size: 11px;
+    min-height: 44px;
+    padding: 6px 12px;
+  }
+  .kiosk-shell .review-layout {
+    grid-template-columns: minmax(0, 0.8fr) minmax(300px, 1.3fr);
+    gap: 18px;
+  }
+  .kiosk-shell .review-controls {
+    gap: 4px;
+  }
+  .review-tabs {
+    padding: 0;
+  }
+  .review-editor,
+  .review-save {
+    gap: 4px;
+    justify-content: center;
+  }
+  .kiosk-shell .filter-fieldset legend {
+    display: none;
+  }
+  .kiosk-shell .retake-grid {
+    height: 44px;
+    max-height: 44px;
+  }
+  .kiosk-shell .retake-grid button {
+    aspect-ratio: auto;
+    height: 44px;
+  }
+  .kiosk-shell .retake-grid span {
+    font-size: 9px;
+    min-height: 20px;
+  }
+  .kiosk-shell .review-editor > .inline-actions .button {
+    font-size: 11px;
+  }
+  .kiosk-shell .consent {
+    font-size: 11px;
+    padding: 8px;
+  }
+  .kiosk-shell .review-save > .small {
+    display: none;
+  }
+  .kiosk-shell .result-card {
+    gap: 5px;
+  }
+  .kiosk-shell .result-card h2 {
+    font-size: 22px;
+  }
+  .kiosk-shell .result-card > p {
+    font-size: 11px;
+  }
+  .kiosk-shell .result-card .small {
+    font-size: 9px !important;
+    line-height: 1.4;
+  }
+  .kiosk-shell .result-card .qr {
+    height: 192px;
+    width: 192px;
+  }
+  .kiosk-shell .result-card:has(.qr) {
+    display: grid;
+    grid-template-columns: 192px minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto auto;
+    column-gap: 16px;
+    align-items: center;
+  }
+  .kiosk-shell .result-layout:has(.qr) {
+    display: block;
+    max-width: 850px;
+  }
+  .kiosk-shell .result-layout:has(.qr) > .composition-stage {
+    display: none;
+  }
+  .kiosk-shell .result-card:has(.qr) > h2 {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .kiosk-shell .result-card:has(.qr) > p:not(.small) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .kiosk-shell .result-card:has(.qr) > .qr {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    width: 192px;
+    height: 192px;
+  }
+  .kiosk-shell .result-card:has(.qr) > .inline-actions {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .kiosk-shell .result-card:has(.qr) > .result-downloads {
+    grid-column: 2;
+    grid-row: 4;
+  }
+  .kiosk-shell .result-card:has(.qr) > .small {
+    grid-column: 1/-1;
+    grid-row: 5;
+  }
+}

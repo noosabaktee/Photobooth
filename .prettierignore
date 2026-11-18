@@ -1,0 +1,11 @@
+node_modules
+.next
+package-lock.json
+references
+examples
+AGENTS.md
+CODEX_PROMPT.md
+PASTE_TO_CODEX.txt
+test-results
+playwright-report
+.qa
