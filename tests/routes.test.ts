@@ -23,7 +23,7 @@ beforeAll(async () => {
   process.env.STORAGE_MODE = "mock";
   process.env.ADMIN_SESSION_SECRET =
     "route-test-secret-only-12345678901234567890123456789";
-  process.env.ADMIN_PASSWORD_HASH = await argon2.hash("test-only-password-123");
+  process.env.ADMIN_PASSWORD_HASH = await argon2.hash("six123");
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
 });
 beforeEach(() => jar.clear());
@@ -90,9 +90,7 @@ it("login uses HttpOnly signed cookie; logout expires it; old stolen tokens rema
   expect((await session()).status).toBe(200);
   expect(await (await session()).json()).toEqual({ authenticated: false });
   expect((await login(json("/", { password: "wrong" }))).status).toBe(401);
-  const response = await login(
-    json("/", { password: "test-only-password-123" }),
-  );
+  const response = await login(json("/", { password: "six123" }));
   expect(response.status).toBe(200);
   const cookie = response.headers.get("set-cookie")!;
   expect(cookie).toMatch(/HttpOnly/i);

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import argon2 from "argon2";
-const password = "e2e-only-password-12345";
+const password = "six123";
 const hash = await argon2.hash(password);
 export default defineConfig({
   testDir: "./e2e",
@@ -20,6 +20,9 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120000,
     env: {
+      PHOTOBOOTH_E2E: "1",
+      // All fixture env is supplied here; never merge the operator's .env.local.
+      __NEXT_PROCESSED_ENV: "true",
       STORAGE_MODE: "mock",
       NEXT_PUBLIC_APP_URL: "http://localhost:3100",
       ADMIN_PASSWORD_HASH: hash,

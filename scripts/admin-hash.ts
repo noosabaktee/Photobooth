@@ -2,6 +2,7 @@ import "./env";
 import argon2 from "argon2";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline/promises";
+import { saveLocalEnv } from "./local-env";
 async function password() {
   if (!process.stdin.isTTY) {
     const rl = createInterface({ input: process.stdin });
@@ -12,7 +13,7 @@ async function password() {
     throw new Error("Password tidak diberikan melalui stdin.");
   }
   process.stdout.write(
-    "Password admin (minimal 12 karakter; input disembunyikan): ",
+    "Password admin (minimal 6 karakter; input disembunyikan): ",
   );
   process.stdin.setRawMode(true);
   process.stdin.resume();
@@ -45,11 +46,15 @@ async function password() {
   });
 }
 const value = await password();
-if (value.length < 12) throw new Error("Gunakan minimal 12 karakter.");
+if (value.length < 6) throw new Error("Gunakan minimal 6 karakter.");
+await saveLocalEnv({
+  ADMIN_PASSWORD_HASH: await argon2.hash(value, { type: argon2.argon2id }),
+  ADMIN_SESSION_SECRET:
+    process.env.ADMIN_SESSION_SECRET &&
+    Buffer.byteLength(process.env.ADMIN_SESSION_SECRET) >= 32
+      ? process.env.ADMIN_SESSION_SECRET
+      : randomBytes(48).toString("base64url"),
+});
 console.log(
-  `ADMIN_PASSWORD_HASH=${await argon2.hash(value, { type: argon2.argon2id })}`,
-);
-console.log(`ADMIN_SESSION_SECRET=${randomBytes(48).toString("base64url")}`);
-console.log(
-  "Simpan hanya di .env.local / secret manager. Jangan commit output ini.",
+  "Password admin tersimpan di .env.local. Restart server lalu login dengan password yang baru dimasukkan. Secret tidak ditampilkan.",
 );

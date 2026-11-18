@@ -9,7 +9,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. For admin, run `npm run admin:hash` to generate Argon2id password hash and add to `.env.local`; generate a strong random `ADMIN_SESSION_SECRET` in local terminal. No default insecure admin password in production.
+Open `http://localhost:3000`. For admin, run `npm run admin:hash`, enter a password of at least 6 characters, then restart the server. The script saves the Argon2id hash and a random session secret directly to `.env.local` without logging secrets; an existing valid session secret is preserved. Login uses the original password. No default admin password. In Next.js `.env*` files, escape every literal dollar in hashes as `\$`; the script handles this automatically. In a hosting environment-variable panel, enter the raw hash without those file escapes. Never commit `.env.local`.
 
 For tests:
 

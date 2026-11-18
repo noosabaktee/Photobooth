@@ -51,7 +51,7 @@ ADMIN_SESSION_SECRET=...
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Generate password hash melalui `npm run admin:hash`, dan session secret via crypto random. Run `npm run dev`, login admin, buat frame, tes publik lalu tes upload user.
+Jalankan `npm run admin:hash` dan masukkan password minimal 6 karakter. Hash dan session secret tersimpan otomatis di `.env.local` dengan escaping yang sesuai Next.js. Restart server setelah perubahan environment. Run `npm run dev`, login admin memakai password asli, buat frame, tes publik lalu tes upload user.
 
 ## E. Live smoke test WAJIB sebelum event
 

@@ -6,7 +6,7 @@ test("admin logs in, builds three slots, publishes, edits, unpublishes, archives
 }) => {
   await page.goto("/admin");
   await expect(page).toHaveURL(/admin\/login/);
-  await page.getByLabel("Kata sandi operator").fill("e2e-only-password-12345");
+  await page.getByLabel("Kata sandi operator").fill("six123");
   await page.getByRole("button", { name: "Masuk ke studio" }).click();
   await expect(
     page.getByRole("heading", { name: "Frame studio" }),

@@ -67,8 +67,7 @@ export function Login() {
         {busy ? "Memeriksa…" : "Masuk ke studio"}
       </Button>
       <p className="small" style={{ marginTop: 20, marginBottom: 0 }}>
-        Belum ada password default. Pengelola perlu mengatur ADMIN_PASSWORD_HASH
-        dan ADMIN_SESSION_SECRET di environment server.
+        Masuk menggunakan password admin yang telah disiapkan pengelola.
       </p>
     </form>
   );

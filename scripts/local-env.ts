@@ -23,7 +23,9 @@ export async function saveLocalEnv(
       (candidate) => !value.includes(candidate),
     );
     if (!quote) throw new Error("Environment value has unsupported quoting.");
-    const entry = `${key}=${quote}${value}${quote}`;
+    // Next.js expands $VARIABLE even inside quotes. Preserve literal dollars.
+    const escaped = value.replace(/\$/g, () => "\\$");
+    const entry = `${key}=${quote}${escaped}${quote}`;
     const match = new RegExp(`^${key}=.*$`, "m");
     content = match.test(content)
       ? content.replace(match, () => entry)

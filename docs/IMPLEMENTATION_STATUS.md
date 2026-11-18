@@ -1,5 +1,15 @@
 # Implementation status — 18 November 2026
 
+## Perbaikan login admin — hash environment dan password enam karakter
+
+- Diagnosis lokal: hash Argon2id dan session secret tersedia, tetapi `$` pada hash di `.env.local` belum di-escape sehingga Next.js melakukan ekspansi variabel dan merusak nilai saat memuat environment. Hash lama diperbaiki tanpa mengganti password operator atau konfigurasi Drive; nilai secret tidak dicetak.
+- `scripts/local-env.ts` meng-escape literal `$`; `scripts/env.ts` memakai loader `@next/env` agar perilaku CLI sama dengan server. `scripts/admin-hash.ts` menerima minimal enam karakter, menyimpan hash langsung ke `.env.local`, membuat session secret bila belum valid, dan mempertahankan session secret valid yang sudah ada. Tidak ada kredensial default.
+- `src/components/admin.tsx`: petunjuk konfigurasi yang sebelumnya selalu tampil diganti dengan instruksi login biasa. Error autentikasi aktual tetap berasal dari API server. README, template environment dan panduan setup/deployment disesuaikan.
+- Regresi menguji password enam karakter melalui CLI → file environment → loader Next.js → verifikasi Argon2id dan API login signed-cookie; password di bawah enam karakter ditolak tanpa mengubah file. Pengujian browser memakai credential fixture terpisah dari akun operator.
+- Folder build E2E `.next-e2e` diisolasi dari server dev operator agar tes tidak berebut lock `.next/dev`; folder tersebut diabaikan Git, formatter dan linter. Loader environment E2E dilewati karena seluruh konfigurasi disuplai oleh fixture, sehingga `.env.local` operator tidak bercampur atau mengubah hash test.
+- Verifikasi: 35 unit/integration tests PASS; satu E2E Chromium admin PASS (login enam karakter, builder tiga slot, publish/unpublish/archive/logout); format, lint, typecheck dan production build PASS. Smoke konfigurasi pada server lokal mengembalikan `401 INVALID_CREDENTIALS` untuk password uji yang sengaja salah, bukan error konfigurasi. Login dengan password asli tetap perlu dicoba operator; password tersebut tidak diminta atau ditampilkan.
+- Catatan dependency audit pada instalasi `@next/env`: npm melaporkan 16 high-severity findings pada dependency tree; audit dependency menyeluruh belum ditangani dalam perbaikan login ini.
+
 ## Setup Drive operator — terhubung dan live smoke PASS
 
 - `.env.local` dibuat dari template dengan random admin session secret; file diperiksa ignored Git, secret tidak dicetak. Setelah OAuth/folder valid, mode diubah menjadi `google-drive`.

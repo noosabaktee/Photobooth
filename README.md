@@ -24,7 +24,7 @@ Di PowerShell gunakan `Copy-Item .env.example .env.local`. Buka http://localhost
 npm run admin:hash
 ```
 
-Masukkan password minimal 12 karakter (input disembunyikan). Simpan output `ADMIN_PASSWORD_HASH` dan `ADMIN_SESSION_SECRET` di `.env.local` atau secret manager, lalu restart server. Jangan commit output. Buka `/admin/login`.
+Masukkan password minimal 6 karakter (input disembunyikan). Script langsung menyimpan `ADMIN_PASSWORD_HASH` dan `ADMIN_SESSION_SECRET` ke `.env.local` tanpa menampilkan secret, lalu restart server dan buka `/admin/login`. Password yang dimasukkan saat login adalah password asli, bukan hash. Jangan commit `.env.local`. Untuk server deployment, transfer environment secara privat; hash di file `.env*` harus memakai `\$` untuk setiap tanda `$` (script sudah menangani ini).
 
 Builder mendukung PNG transparan, deteksi dimensi, 1–6 slot, drag/resize sudut, nudge dengan panah (Shift untuk langkah besar), reorder, koordinat normalized, radius, dan crop alignment. Preview memakai ilustrasi orisinal. Save draft mengembalikan frame ke draft; Save & publish memeriksa layout dan alpha setiap slot. Delete mengarsipkan frame; aset lama dan foto hasil pengguna tetap disimpan.
 
