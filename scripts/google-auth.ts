@@ -2,6 +2,7 @@ import "./env";
 import { createServer } from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { oauthClient } from "../src/lib/storage/google-drive";
+import { saveLocalEnv } from "./local-env";
 const redirect = new URL(
   process.env.GOOGLE_OAUTH_REDIRECT_URI ||
     "http://localhost:3847/oauth2callback",
@@ -43,16 +44,24 @@ const server = createServer(async (req, res) => {
       throw new Error(
         "Tidak ada refresh token. Revoke grant aplikasi di akun operator dan ulangi consent.",
       );
-    console.log(
-      `\nGOOGLE_REFRESH_TOKEN=${tokens.refresh_token}\nSimpan token ini hanya di .env.local / secret manager. Jangan commit atau bagikan.`,
-    );
+    if (process.argv.includes("--save-env")) {
+      await saveLocalEnv({ GOOGLE_REFRESH_TOKEN: tokens.refresh_token });
+      console.log(
+        "OAuth berhasil. Refresh token disimpan di .env.local tanpa dicetak.",
+      );
+    } else
+      console.log(
+        `\nGOOGLE_REFRESH_TOKEN=${tokens.refresh_token}\nSimpan token ini hanya di .env.local / secret manager. Jangan commit atau bagikan.`,
+      );
     res
       .writeHead(200, {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-store",
       })
       .end(
-        "OAuth berhasil. Kembali ke terminal lokal dan simpan refresh token di environment.",
+        process.argv.includes("--save-env")
+          ? "OAuth berhasil. Token sudah disimpan di konfigurasi lokal. Kamu boleh kembali ke photobooth."
+          : "OAuth berhasil. Kembali ke terminal lokal dan simpan refresh token di environment.",
       );
   } catch {
     res

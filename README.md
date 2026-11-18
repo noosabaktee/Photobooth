@@ -1,6 +1,10 @@
-# Snapstrip — Digital Photobooth
+# Hoya-Hoya Days — Kalbe Morinaga Indonesia Photobooth
 
 Next.js App Router + React + TypeScript strict + Tailwind. Guest tanpa akun, foto di memori browser, frame dinamis dari Google Drive, satu PNG final dan QR langsung ke viewer Drive setelah public ACL terverifikasi. **Tidak memakai database.**
+
+Identitas event diatur di `src/lib/event.ts`: **Hoya-Hoya Days**, **Kalbe Morinaga Indonesia**, dan tagline “Satu tim. Banyak cerita.” Tema acara memakai hijau, putih, biru gelap serta aksen merah; ini interpretasi desain event, bukan panduan warna resmi perusahaan. Nama perusahaan berupa teks, tanpa logo perusahaan hasil rekayasa. Tiga frame demo menyertakan nama event dan perusahaan di luar area foto. File download bernama `hoya-hoya-days-kmi.png`.
+
+Jalankan `npm run frames:build` setelah mengubah identitas untuk membangun ulang PNG dan thumbnail demo. Untuk frame yang sudah ada di Drive, perbarui overlay lewat admin dan publish kembali; seed yang sudah diimpor sengaja dilewati oleh `drive:seed`. Frame custom admin tetap mengikuti desain yang diunggah operator.
 
 ## Jalankan lokal
 
@@ -38,8 +42,10 @@ Refresh/close menghapus foto, link, dan QR dari state aplikasi. Foto yang sudah 
 
 ## Aktifkan Google Drive
 
+Setup tanpa menyalin secret: unduh JSON client OAuth tipe **Web application** dari Google Cloud, lalu jalankan `npm run drive:configure -- "path/client_secret.json"`. Gunakan `npm run drive:auth -- --save-env` dan `npm run drive:bootstrap -- --save-env` agar token/folder IDs langsung disimpan ke `.env.local` tanpa dicetak. Status storage tetap mock sampai seluruh konfigurasi siap. Jangan commit JSON credential hasil download.
+
 1. Ikuti [setup OAuth](docs/05_GOOGLE_DRIVE_SETUP.md). Buat OAuth **Web client**, aktifkan Drive API, tambahkan redirect persis `http://localhost:3847/oauth2callback`.
-2. Isi client ID/secret dan redirect URI di env. Jalankan `npm run drive:auth`, buka URL consent dengan akun operator. Callback memeriksa state; refresh token hanya dicetak di terminal lokal. Simpan `GOOGLE_REFRESH_TOKEN` di env.
+2. Isi client ID/secret dan redirect URI di env, atau impor JSON dengan `drive:configure`. Jalankan `npm run drive:auth -- --save-env`, buka URL consent dengan akun operator. Callback memeriksa state dan menyimpan refresh token langsung ke `.env.local` tanpa mencetaknya. Tanpa `--save-env`, token dicetak untuk konfigurasi manual.
 3. Jalankan `npm run drive:bootstrap`. Script membuat/menemukan folder berlabel aplikasi, menolak folder publik/domain, lalu mencetak tiga folder IDs untuk env. Folder tetap private.
 4. Isi folder IDs, ubah `STORAGE_MODE=google-drive`, pastikan `NEXT_PUBLIC_APP_URL` sama persis dengan origin aplikasi (termasuk port), restart.
 5. Opsional `npm run drive:seed` mengimpor tiga varian tiga foto, membuat thumbnail WebP dan JSON per-frame, lalu publish. Seed yang sudah ada dikenali berdasarkan tag. Seed lama 4/6 foto diarsipkan setelah pengganti tiga foto berhasil dipublish; aset lamanya tetap disimpan. Frame custom admin tidak diubah.

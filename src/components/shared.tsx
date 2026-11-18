@@ -1,13 +1,21 @@
 import Link from "next/link";
 import { Aperture, ArrowUpRight } from "lucide-react";
+import { eventIdentity } from "@/lib/event";
 export function Header() {
   return (
     <header className="site-header">
-      <Link className="brand" href="/" aria-label="Snapstrip beranda">
+      <Link
+        className="brand"
+        href="/"
+        aria-label={`${eventIdentity.name} beranda`}
+      >
         <span className="brand-icon">
           <Aperture size={23} />
         </span>
-        snapstrip<span className="brand-dot">®</span>
+        <span className="brand-copy">
+          <strong>{eventIdentity.name}</strong>
+          <span>{eventIdentity.company}</span>
+        </span>
       </Link>
       <nav aria-label="Navigasi utama">
         <Link href="/?view=how">Cara main</Link>
@@ -33,7 +41,9 @@ export function Privacy() {
 export function Footer() {
   return (
     <footer className="site-footer">
-      <span>snapstrip · made for the little moments.</span>
+      <span>
+        {eventIdentity.name} · {eventIdentity.company}
+      </span>
       <Link href="/admin">
         Ruang pengelola <ArrowUpRight size={14} />
       </Link>

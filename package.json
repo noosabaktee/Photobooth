@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "admin:hash": "tsx scripts/admin-hash.ts",
     "drive:auth": "tsx scripts/google-auth.ts",
+    "drive:configure": "tsx scripts/google-client.ts",
     "drive:bootstrap": "tsx scripts/drive-bootstrap.ts",
     "drive:seed": "tsx scripts/drive-seed.ts",
     "frames:build": "tsx scripts/build-starter-frames.ts"

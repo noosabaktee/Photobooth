@@ -5,6 +5,7 @@ import { KioskFooter } from "@/components/kiosk";
 import { Gallery } from "@/components/gallery";
 import { Button } from "@/components/ui/button";
 import { dummyPhoto } from "@/lib/compositor";
+import { eventIdentity } from "@/lib/event";
 function PaperStrip({ side }: { side: "left" | "right" }) {
   return (
     <div className={`paper-strip strip-${side}`} aria-hidden="true">
@@ -13,7 +14,7 @@ function PaperStrip({ side }: { side: "left" | "right" }) {
           <img src={dummyPhoto(i + (side === "right" ? 3 : 0))} alt="" />
         </div>
       ))}
-      <span>little moments ♡</span>
+      <span>Hoya-Hoya memories ♡</span>
     </div>
   );
 }
@@ -32,28 +33,29 @@ export function Landing({ view }: { view: "home" | "how" | "frames" }) {
               <PaperStrip side="right" />
               <div className="hero-content">
                 <div className="eyebrow">
-                  <span className="live-dot" /> YOUR EVERYDAY MEMORY MAKER
+                  <span className="live-dot" /> {eventIdentity.company}
                 </div>
                 <h1>
-                  Good company.
+                  Hoya-Hoya
                   <br />
-                  Silly poses.
-                  <br />
-                  <em>Great memories.</em>
+                  <em>Days!</em>
+                  <span className="event-headline-tag">
+                    {eventIdentity.tagline}
+                  </span>
                 </h1>
                 <p>
-                  Satu layar, sejuta cerita. Masuk ke photo booth kecilmu,
-                  <br className="desktop-break" /> ajak orang tersayang, dan
-                  biarkan momennya tinggal.
+                  Saatnya seru-seruan bareng keluarga besar KMI.
+                  <br className="desktop-break" /> Ajak rekan satu tim, pilih
+                  pose, dan abadikan kebersamaan kita.
                 </p>
                 <Button asChild className="hero-cta">
                   <Link href="/booth">
-                    <Camera size={20} /> Start Photobooth{" "}
+                    <Camera size={20} /> Mulai foto bareng{" "}
                     <ArrowRight size={19} />
                   </Link>
                 </Button>
                 <span className="hero-caption">
-                  Tanpa akun. Tanpa ribet. Cukup jadi dirimu.
+                  3 jepretan · Banyak senyuman · Kenangan untuk dibawa pulang
                 </span>
               </div>
               <span className="hero-spark spark-one" aria-hidden="true">
@@ -63,12 +65,12 @@ export function Landing({ view }: { view: "home" | "how" | "frames" }) {
                 ✧
               </span>
               <div className="hero-sticker">
-                <Heart size={19} /> more memories,
+                <Heart size={19} /> satu tim,
                 <br />
-                less scrolling.
+                banyak senyum!
               </div>
               <div className="hero-bottom">
-                <span>A SMALL BOOTH FOR BIG FEELINGS</span>
+                <span>HOYA-HOYA DAYS · KMI PHOTOBOOTH</span>
                 <Link href="/?view=frames">LIHAT KOLEKSI FRAME ↗</Link>
               </div>
             </section>
@@ -78,15 +80,15 @@ export function Landing({ view }: { view: "home" | "how" | "frames" }) {
           <>
             <section className="how-section section-wrap" id="how">
               <div className="section-intro">
-                <p className="eyebrow">READY, SET, MAKE A MEMORY</p>
+                <p className="eyebrow">HOYA-HOYA DAYS PHOTOBOOTH</p>
                 <h2>
                   Tiga langkah.
                   <br /> <em>Banyak cerita.</em>
                 </h2>
                 <p>
-                  Tidak perlu menunggu acara spesial.
+                  Rayakan momen bersama rekan satu tim.
                   <br />
-                  Hari ini juga layak diabadikan.
+                  Senyum hari ini, cerita untuk nanti.
                 </p>
               </div>
               <div className="how-steps">
@@ -127,12 +129,12 @@ export function Landing({ view }: { view: "home" | "how" | "frames" }) {
           <section id="frames" className="collections section-wrap">
             <div className="section-heading">
               <div>
-                <p className="eyebrow">A FRAME FOR EVERY FEELING</p>
+                <p className="eyebrow">KOLEKSI HOYA-HOYA DAYS</p>
                 <h2>
-                  Pick your <em>personality.</em>
+                  Pilih frame. <em>Rayakan momennya.</em>
                 </h2>
               </div>
-              <span>Dirancang untuk momen yang berkesan. ♡</span>
+              <span>Kenangan bersama keluarga besar KMI. ♡</span>
             </div>
             <Gallery />
           </section>

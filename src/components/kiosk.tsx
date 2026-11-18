@@ -4,12 +4,15 @@ import Link from "next/link";
 import { ShieldCheck, X } from "lucide-react";
 import { Privacy } from "./shared";
 import { Button } from "./ui/button";
+import { eventIdentity } from "@/lib/event";
 export function KioskFooter() {
   const dialog = useRef<HTMLDialogElement>(null);
   return (
     <>
       <footer className="kiosk-footer">
-        <span>snapstrip · little moments, big memories.</span>
+        <span>
+          {eventIdentity.name} · {eventIdentity.company}
+        </span>
         <button onClick={() => dialog.current?.showModal()}>
           <ShieldCheck size={15} /> Privasi foto
         </button>

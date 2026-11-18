@@ -9,20 +9,20 @@ Panduan ini untuk mengaktifkan upload **nyata**. Tanpa kredensial, aplikasi haru
 3. Buka **APIs & Services / Library**, enable **Google Drive API**.
 4. Konfigurasi **Google Auth Platform / OAuth consent screen**. Pilih audience yang cocok untuk akun yang dipakai. Set test user saat berada dalam mode testing.
 5. Tambahkan scope minimal `https://www.googleapis.com/auth/drive.file`. Scope ini dirancang untuk file yang dibuat/digunakan aplikasi; folder bootstrap harus dibuat melalui aplikasi / dipilih dengan hak yang sesuai. Hindari request scope full Drive tanpa alasan.
-6. Buat **OAuth Client ID** tipe Web application atau Desktop (sesuai script `drive:auth` yang dibuat Codex); masukkan redirect URI lokal yang ditentukan script secara _persis_ (mis. `http://localhost:3847/oauth2callback`, bukan placeholder yang berbeda).
+6. Buat **OAuth Client ID** tipe **Web application** untuk script proyek ini; masukkan redirect URI lokal secara _persis_: `http://localhost:3847/oauth2callback`.
 7. Catat `Client ID` dan `Client secret`. **Jangan commit, share publik, atau taruh dalam `NEXT_PUBLIC_*`.**
 
 ## B. Dapatkan refresh token (offline)
 
-1. Isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` dan `GOOGLE_OAUTH_REDIRECT_URI` pada `.env.local`.
-2. Jalankan `npm run drive:auth` (Codex wajib membuat script ini) untuk mendapatkan URL consent, kemudian login memakai akun Drive operator.
+1. Isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` dan `GOOGLE_OAUTH_REDIRECT_URI` pada `.env.local`, atau unduh JSON client web lalu jalankan `npm run drive:configure -- "path/client_secret.json"`.
+2. Jalankan `npm run drive:auth -- --save-env` untuk mendapatkan URL consent, kemudian login memakai akun Drive operator. Flag ini menyimpan token langsung ke `.env.local` tanpa mencetaknya; perintah tanpa flag tersedia untuk konfigurasi manual.
 3. Script harus meminta `access_type=offline` dan `prompt=consent`, menangani callback dengan state verification, lalu mencetak token **secara aman** (hanya ke terminal lokal, tidak pernah ke client/log server production). Bila tidak ada refresh token baru, dokumentasikan revoke grant lama dan ulangi consent secara aman.
 4. Simpan hasil ke `GOOGLE_REFRESH_TOKEN` dalam `.env.local` atau secret manager host. **Jangan pernah upload ke ZIP/repo.**
 5. Hati-hati: Google menyatakan aplikasi OAuth audience External dengan publishing status **Testing** dapat menghasilkan refresh token yang kedaluwarsa dalam **7 hari**, kecuali scopes hanya identitas dasar. Agar tahan lama untuk penggunaan nyata, atur status produksi/verification sesuai persyaratan Google. Patuhi kebijakan dan permintaan verifikasi yang berlaku; jangan mengakali pembatasan.
 
 ## C. Bootstrap folder Drive
 
-1. Jalankan `npm run drive:bootstrap`, dengan token valid.
+1. Jalankan `npm run drive:bootstrap -- --save-env`, dengan token valid. Ketiga folder ID disimpan langsung ke `.env.local`.
 2. Script wajib membuat atau menemukan **folder milik aplikasi**:
 
    ```text
@@ -55,15 +55,15 @@ Generate password hash melalui `npm run admin:hash`, dan session secret via cryp
 
 ## E. Live smoke test WAJIB sebelum event
 
-1. Di admin, upload PNG overlay test, buat 4 slot lalu publish.
+1. Impor tiga frame event dengan `npm run drive:seed`, atau di admin upload PNG overlay test, buat slot sesuai desain lalu publish.
 2. Buka public page di incognito, lihat frame test.
 3. Jalankan capture kamera → final PNG.
 4. Klik upload consent dan tunggu sukses, simpan hasil test di Drive.
-5. Pastikan satu file final ada di folder `photos/`, bukan empat raw photos.
+5. Pastikan satu file final ada di folder `photos/`; foto mentah tiap jepretan tidak diunggah.
 6. Scan QR dengan HP akun Google yang **berbeda** atau tanpa login / incognito.
 7. Pastikan link Drive dapat dibuka & diunduh. Jika Google Workspace memblokir external sharing, perbaiki policy atau gunakan pendekatan lain — jangan buat QR palsu.
 8. Refresh halaman photobooth; QR hilang, foto tetap di Drive.
-9. Unpublish frame; tidak tampil pada gallery setelah cache expiry.
+9. Unpublish frame; tidak tampil pada request gallery berikutnya (implementasi saat ini menggunakan `no-store`).
 10. Hapus hasil test secara manual dari Drive untuk menghemat storage.
 
 ## F. Troubleshooting

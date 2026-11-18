@@ -1,0 +1,240 @@
+/* Event artwork and palette; the wordmark is not a corporate logo. */
+:root {
+  --teal: #087443;
+  --ink: #17334d;
+  --cream: #fafcf7;
+  --muted: #53675d;
+  --line: #dce6da;
+  --event-red: #bd3936;
+}
+.site-header {
+  border-bottom: 1px solid #e4ebdf;
+}
+.brand {
+  gap: 10px;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+.brand-icon {
+  border-radius: 12px;
+  background: var(--teal);
+}
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+.brand-copy strong {
+  font-size: 22px;
+  letter-spacing: -0.7px;
+}
+.brand-copy > span {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: var(--muted);
+}
+.button-primary:hover {
+  background: #065b35;
+}
+.button-secondary:hover,
+.button-ghost:hover {
+  background: #edf4e7;
+}
+:focus-visible,
+.frame-choice:focus-visible {
+  outline-color: var(--event-red);
+}
+.kiosk-shell .hero {
+  background:
+    radial-gradient(ellipse at 12% 15%, #e0edc3 0, transparent 40%),
+    radial-gradient(ellipse at 90% 85%, #e3eee9 0, transparent 40%),
+    linear-gradient(120deg, #f1f7e8, #e1eed8 65%, #f7faf1);
+  border: 1px solid #dfe9d4;
+  border-radius: 24px;
+}
+.kiosk-shell .hero-content {
+  max-width: min(780px, 66%);
+}
+.kiosk-shell .hero h1 {
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.06em;
+  line-height: 1.04;
+  font-size: clamp(44px, min(6.8vw, 10dvh), 104px);
+}
+.kiosk-shell .hero h1 em {
+  color: var(--event-red);
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+}
+.event-headline-tag {
+  display: block;
+  margin-top: 18px;
+  color: var(--teal);
+  font-size: clamp(13px, 2dvh, 19px);
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+.kiosk-shell .hero .eyebrow {
+  color: #356342;
+  font-size: clamp(9px, 1vw, 12px);
+  letter-spacing: 1.6px;
+  font-weight: 700;
+}
+.kiosk-shell .hero-content > p {
+  color: #435e4e;
+  max-width: 440px;
+  margin-inline: auto;
+  line-height: 1.7;
+}
+.hero-cta {
+  box-shadow: 0 5px 0 #afcc87;
+}
+.kiosk-shell .hero-caption {
+  color: #4a6253;
+}
+.hero-orbit {
+  border-color: #91b26e;
+  opacity: 0.35;
+}
+.kiosk-shell .paper-strip {
+  background: #fffef9;
+  border-bottom: 6px solid var(--teal);
+  border-radius: 4px;
+}
+.kiosk-shell .strip-right {
+  border-bottom-color: var(--event-red);
+}
+.paper-strip span {
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--teal);
+}
+.hero-sticker {
+  color: #305d40;
+}
+.kiosk-shell .frame-color-0 .frame-stage {
+  background: #f4e5e4;
+}
+.kiosk-shell .frame-color-1 .frame-stage {
+  background: #e5eaf0;
+}
+.kiosk-shell .frame-color-2 .frame-stage {
+  background: #e3efd7;
+}
+.frame-arrow {
+  color: var(--teal);
+}
+.camera-viewport,
+.camera-placeholder {
+  background: radial-gradient(ellipse at top, #2f6547, #19392d);
+}
+.kiosk-shell .capture-thumbs > div {
+  background: #e5eedc;
+  color: #607b60;
+}
+.kiosk-shell .capture-thumbs > div.active {
+  border-color: var(--teal);
+}
+.kiosk-footer {
+  border-top: 1px solid #e7ede2;
+}
+@media (max-width: 800px) {
+  .brand-copy strong {
+    font-size: 19px;
+  }
+  .brand-copy > span {
+    font-size: 9px;
+  }
+  .kiosk-shell .hero-content {
+    max-width: 72%;
+  }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .kiosk-shell .site-header {
+    padding-inline: 12px;
+    gap: 8px;
+  }
+  .brand {
+    gap: 7px;
+  }
+  .brand-copy strong {
+    font-size: 14px;
+    letter-spacing: -0.4px;
+  }
+  .brand-copy > span {
+    font-size: 7px;
+    letter-spacing: 0;
+  }
+  .kiosk-shell .brand-icon {
+    width: 26px;
+    height: 28px;
+    border-radius: 9px;
+  }
+  .kiosk-shell .brand-icon svg {
+    width: 18px;
+  }
+  .kiosk-shell .site-header nav {
+    gap: 10px;
+    font-size: 10px;
+  }
+  .kiosk-shell .hero {
+    border-radius: 20px;
+  }
+  .kiosk-shell .hero-content {
+    max-width: 100%;
+    padding: 0 14px 11dvh;
+  }
+  .kiosk-shell .hero h1 {
+    font-size: clamp(41px, min(13vw, 9dvh), 64px);
+  }
+  .kiosk-shell .hero .eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.6px;
+  }
+  .event-headline-tag {
+    font-size: 13px;
+    margin-top: 12px;
+  }
+  .kiosk-shell .hero-caption {
+    max-width: 240px;
+    margin-inline: auto;
+    font-size: 9px;
+  }
+  .kiosk-shell .hero-sticker {
+    padding: 8px 10px;
+  }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .brand-copy strong {
+    font-size: 16px;
+  }
+  .brand-copy > span {
+    font-size: 8px;
+  }
+  .kiosk-shell .hero-content {
+    padding-block: 6px;
+  }
+  .kiosk-shell .hero h1 {
+    font-size: clamp(30px, 10dvh, 46px);
+  }
+  .event-headline-tag {
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .kiosk-shell .hero .eyebrow {
+    margin-bottom: 6px;
+    font-size: 8px;
+  }
+  .kiosk-shell .hero-content > p {
+    margin-block: 8px;
+    font-size: 11px;
+  }
+}

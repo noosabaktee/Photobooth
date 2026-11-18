@@ -1,4 +1,25 @@
-# Implementation status — 16 November 2026
+# Implementation status — 18 November 2026
+
+## Setup Drive operator — terhubung dan live smoke PASS
+
+- `.env.local` dibuat dari template dengan random admin session secret; file diperiksa ignored Git, secret tidak dicetak. Setelah OAuth/folder valid, mode diubah menjadi `google-drive`.
+- Browser Google Cloud dapat dibaca. Identitas OAuth “Hoya-Hoya Days Photobooth” dibuat setelah persetujuan operator untuk Google API Services User Data Policy. Client web dengan callback `http://localhost:3847/oauth2callback` dibuat setelah konfirmasi operator; JSON diunduh lokal, Client ID/Secret diimpor ke `.env.local` tanpa dicetak. Akun operator terdaftar sebagai satu test user.
+- Script setup mendukung `drive:configure` untuk JSON client web dan `--save-env` pada auth/bootstrap. Output credential disimpan atomik ke `.env.local`; test memeriksa preservasi konfigurasi dan penolakan newline injection.
+- Operator menyelesaikan autentikasi/persetujuan Google sendiri; callback OAuth PASS dan refresh token tersimpan. `drive:bootstrap -- --save-env` membuat tiga folder privat, `drive:seed` mengimpor/publish tiga frame event dengan masing-masing tiga slot. Aplikasi localhost kini memakai penyimpanan Drive riil.
+- Live smoke melalui browser aplikasi PASS: synthetic camera → 3 captures → review → consent → satu upload PNG final → QR Drive asli. Browser context baru tanpa akun Google berhasil membuka viewer hasil. Verifikasi API Drive: hanya satu PNG di photos, resolusi 1200×2826, ACL `anyone:reader` hanya pada file final; root/frames/photos tetap privat. Tidak ada raw captures yang diunggah.
+- File uji sintetis tetap tersedia di folder photos agar operator bisa memeriksa; screenshot hasil/anonymous viewer dan metadata uji disimpan di `.qa/` (ignored). Tidak memakai foto pribadi atau referensi.
+- Script setup: format/lint/typecheck, 34 unit/integration tests (4 files) dan production build PASS. Pengujian E2E mock sebelumnya 18 PASS; live smoke ini menambah bukti Drive riil.
+- Batas operasional: OAuth masih External/Testing; token dapat kedaluwarsa dalam tujuh hari. Sebelum acara jangka panjang, lengkapi Branding lalu publishing Production sesuai kebijakan Google dan lakukan OAuth ulang bila diperlukan. Password admin operator masih perlu ditetapkan lewat `admin:hash`; setup Drive tidak mengarang password admin.
+
+## Revisi — Hoya-Hoya Days, Kalbe Morinaga Indonesia
+
+- `src/lib/event.ts`: identitas publik event terpusat. Header/footer, metadata browser, favicon kamera orisinal, landing dan copy booth diperbarui; nama file download `hoya-hoya-days-kmi.png`.
+- `src/app/event.css`: palet acara hijau/putih, biru gelap dan aksen merah, judul event besar, tipografi serta ornamen foto. Palet merupakan interpretasi acara, bukan klaim brand guideline resmi; nama perusahaan ditampilkan sebagai teks, tanpa meniru logo. Referensi konteks perusahaan: [Kalbe CSR](https://kalbecsr.id/en/read/78/kalbe-morinaga-indonesias-commitment-to-the-highest-product-safety-and-quality-for-indonesian-children/).
+- Builder aset deterministik menambahkan identitas event pada header/footer ketiga PNG dan thumbnail. Letak/dimensi tiga slot serta PNG sumber dipertahankan; ukuran teks menyesuaikan ruang footer Vintage yang pendek. Validasi dimensi/alpha PASS. Overlay/preview tetap identik dengan PNG final.
+- Screenshot desktop/HP dan ketiga preview frame diperiksa. Sembilan viewport kiosk tetap satu layar. Semua foto berasal dari kamera; kartu frame tetap dapat diklik langsung.
+- README mencatat lokasi konfigurasi identitas dan langkah pembaruan frame Drive yang sudah diimpor; tidak menjalankan mutasi Google Drive riil.
+- Verifikasi akhir: format/lint/typecheck, 33 unit/integration, 18 E2E dan production build PASS. Setelah penyempurnaan header/footer frame, 4 tes booth (termasuk metadata, capture/retake, pixel export dan error upload) serta 33 unit/integration dijalankan ulang — PASS.
+- Server produksi mock diperbarui di localhost:3000. Smoke desktop 1920×1080 dan HP 390×844 PASS: judul/nama perusahaan benar, landing tanpa scroll, klik gambar frame menuju kamera, tanpa picker galeri, tiga aset frame event dapat dimuat. Screenshot produksi tersimpan di `.qa/hoya-hoya-production-*.png`.
 
 ## Revisi — pilih gambar frame dan kamera saja
 
@@ -43,7 +64,7 @@
 ## Status
 
 - Implementasi P0 selesai; seluruh quality gates otomatis lulus (rincian di bawah).
-- Live Drive smoke memerlukan konfigurasi OAuth operator; belum dijalankan.
+- Live Drive smoke telah dijalankan pada 18 November 2026 dengan gambar sintetis — PASS; rincian setup dan batas Testing di bagian teratas.
 
 ## Fase 2–4 — Implementasi berjalan
 

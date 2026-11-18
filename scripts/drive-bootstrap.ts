@@ -1,5 +1,6 @@
 import "./env";
 import { driveClient, retry } from "../src/lib/storage/google-drive";
+import { saveLocalEnv } from "./local-env";
 const drive = driveClient();
 if (!process.env.GOOGLE_REFRESH_TOKEN)
   throw new Error("GOOGLE_REFRESH_TOKEN diperlukan.");
@@ -43,6 +44,16 @@ async function folder(name: string, parent?: string) {
 const root = await folder("PHOTOBOOTH_ROOT"),
   frames = await folder("frames", root),
   photos = await folder("photos", root);
-console.log(
-  `GOOGLE_DRIVE_ROOT_FOLDER_ID=${root}\nGOOGLE_DRIVE_FRAMES_FOLDER_ID=${frames}\nGOOGLE_DRIVE_PHOTOS_FOLDER_ID=${photos}\nFolder tetap private. Simpan ID di environment.`,
-);
+if (process.argv.includes("--save-env")) {
+  await saveLocalEnv({
+    GOOGLE_DRIVE_ROOT_FOLDER_ID: root,
+    GOOGLE_DRIVE_FRAMES_FOLDER_ID: frames,
+    GOOGLE_DRIVE_PHOTOS_FOLDER_ID: photos,
+  });
+  console.log(
+    "Folder Drive privat siap. Ketiga folder ID disimpan di .env.local.",
+  );
+} else
+  console.log(
+    `GOOGLE_DRIVE_ROOT_FOLDER_ID=${root}\nGOOGLE_DRIVE_FRAMES_FOLDER_ID=${frames}\nGOOGLE_DRIVE_PHOTOS_FOLDER_ID=${photos}\nFolder tetap private. Simpan ID di environment.`,
+  );

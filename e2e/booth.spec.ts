@@ -8,18 +8,20 @@ test("guest gallery, three photos, retake, export, consent, mock result and refr
   page.on("pageerror", (e) => errors.push(e.message));
   await installCamera(page);
   await page.goto("/");
+  await expect(page).toHaveTitle("Hoya-Hoya Days | Kalbe Morinaga Indonesia");
   await expect(
-    page.getByRole("heading", { name: /Good company/ }),
-  ).toBeVisible();
+    page.getByRole("link", { name: "Hoya-Hoya Days beranda" }),
+  ).toContainText("Kalbe Morinaga Indonesia");
+  await expect(page.getByRole("heading", { name: /Hoya-Hoya/ })).toBeVisible();
   await page.screenshot({ path: ".qa/landing-desktop.png", fullPage: true });
-  await page.getByRole("link", { name: /Start Photobooth/ }).click();
+  await page.getByRole("link", { name: /Mulai foto bareng/ }).click();
   await page.getByAltText("Preview Pink Gingham").click();
   await page.route("**/api/frames/**/asset/overlay?*", (route) =>
     route.abort(),
   );
   await takePhotos(page);
   await expect(
-    page.getByRole("heading", { name: "Looks like a keeper." }),
+    page.getByRole("heading", { name: "Momen tim yang berkesan." }),
   ).toBeVisible();
   const before = await page
     .locator(".retake-grid img")
@@ -27,7 +29,7 @@ test("guest gallery, three photos, retake, export, consent, mock result and refr
   await page.getByRole("button", { name: "Ulang foto 3", exact: true }).click();
   await takePhotos(page, true);
   await expect(
-    page.getByRole("heading", { name: "Looks like a keeper." }),
+    page.getByRole("heading", { name: "Momen tim yang berkesan." }),
   ).toBeVisible();
   const after = await page
     .locator(".retake-grid img")
@@ -40,7 +42,7 @@ test("guest gallery, three photos, retake, export, consent, mock result and refr
   await page.screenshot({ path: ".qa/review-desktop.png", fullPage: true });
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download PNG lokal" }).click();
-  expect((await download).suggestedFilename()).toBe("snapstrip-memory.png");
+  expect((await download).suggestedFilename()).toBe("hoya-hoya-days-kmi.png");
   await page
     .getByRole("button", { name: "Simpan & bagikan", exact: true })
     .click();
@@ -92,7 +94,7 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
   await page.getByRole("button", { name: "Buka kamera" }).click();
   await page.getByRole("button", { name: "Mulai countdown" }).click();
   await expect(
-    page.getByRole("heading", { name: "Looks like a keeper." }),
+    page.getByRole("heading", { name: "Momen tim yang berkesan." }),
   ).toBeVisible({ timeout: 25000 });
   await expect(page.locator(".retake-grid button")).toHaveCount(3);
   expect(
@@ -125,7 +127,7 @@ test("mobile landing and booth have no horizontal clipping", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(
-    page.getByRole("link", { name: /Start Photobooth/ }),
+    page.getByRole("link", { name: /Mulai foto bareng/ }),
   ).toBeVisible();
   await page.screenshot({ path: ".qa/landing-mobile.png", fullPage: true });
   expect(

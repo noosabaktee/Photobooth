@@ -73,7 +73,7 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await page.goto("/");
     await expect(
-      page.getByRole("link", { name: /Start Photobooth/ }),
+      page.getByRole("link", { name: /Mulai foto bareng/ }),
     ).toBeVisible();
     await fits(page);
     await page.getByRole("link", { name: "Cara main", exact: true }).click();

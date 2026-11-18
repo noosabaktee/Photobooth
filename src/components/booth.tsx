@@ -27,6 +27,7 @@ import {
   type Filter,
 } from "@/lib/compositor";
 import { driveViewUrl } from "@/lib/urls";
+import { eventIdentity } from "@/lib/event";
 
 type Result =
   | { mode: "mock"; message: string }
@@ -320,7 +321,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
       const output = await render();
       const a = document.createElement("a");
       a.href = output.url;
-      a.download = "snapstrip-memory.png";
+      a.download = eventIdentity.downloadFilename;
       a.click();
     } catch (e) {
       setError((e as Error).message);
@@ -407,20 +408,20 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         ))}
       </ol>
       <div className="booth-heading">
-        <p className="eyebrow">YOUR LITTLE CREATIVE CORNER</p>
+        <p className="eyebrow">{eventIdentity.name} · KMI PHOTOBOOTH</p>
         <h1>
           {
             [
               "Temukan frame favoritmu.",
-              "Okay, give us your best pose.",
+              "Satu tim, pose paling seru!",
               "Sedikit sentuhan, banyak kenangan.",
-              "A little moment, yours to keep.",
+              "Kenangan Hoya-Hoya, untuk dibawa pulang.",
             ][step]
           }
         </h1>
         <p>
           {step === 0
-            ? "Pilih suasana. Kami siapkan tempat untuk ceritamu."
+            ? "Pilih frame favorit, lalu ajak rekanmu foto bareng."
             : frame
               ? `${frame.name} · ${frame.slots.length} foto · ${frame.dimensions.width} × ${frame.dimensions.height} px`
               : ""}
@@ -538,7 +539,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
               )}
             </section>
             <aside className="capture-sidebar">
-              <h2>Make yourself a memory.</h2>
+              <h2>Senyum bareng, Hoya-Hoya!</h2>
               <p>
                 Hitungan 3 detik untuk setiap foto. Santai, kamu bisa ulang
                 nanti.
@@ -601,7 +602,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
             </div>
             <section className="review-controls">
               <p className="eyebrow">THE FINAL LITTLE DETAILS</p>
-              <h2>Looks like a keeper.</h2>
+              <h2>Momen tim yang berkesan.</h2>
               <p>
                 Pilih filter, cek tiap jepretan, lalu bawa pulang ceritanya.
               </p>
