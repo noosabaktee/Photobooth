@@ -1,4 +1,4 @@
-# Deployment KMI Photobooth
+`# Deployment KMI Photobooth
 
 Panduan menjalankan Hoya-Hoya Days Photobooth pada Ubuntu/Debian menggunakan Node.js, systemd, dan Nginx. Semua perintah di bawah dijalankan pada **server Linux**, bukan PowerShell Windows.
 

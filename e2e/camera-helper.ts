@@ -11,7 +11,7 @@ export async function installCamera(page: Page) {
     ) =>
       timer(
         handler,
-        delay === 1000 || delay === 350 ? 30 : delay,
+        delay === 1000 || delay === 500 || delay === 350 ? 30 : delay,
         ...args,
       )) as typeof window.setTimeout;
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {

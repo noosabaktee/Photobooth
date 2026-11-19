@@ -2,14 +2,17 @@
 
 ## A. Pengguna: mengambil foto
 
-1. Buka alamat website lalu klik **Start Photobooth**.
+1. Buka alamat website lalu ketuk **Mulai foto bareng**. Tombol **Cara pakai** di footer membuka bantuan tiga langkah kapan saja.
 2. Klik langsung gambar/kartu frame dari koleksi. Jumlah foto otomatis mengikuti jumlah kotak di frame tersebut.
 3. Klik **Buka kamera** dan izinkan akses. Semua foto diambil melalui kamera. Jika tidak tersedia, periksa izin browser, sambungan kamera, dan HTTPS lalu coba lagi.
-4. Ikuti countdown; ambil foto beberapa kali sesuai slot. Lihat jumlah foto di indikator.
+4. Ikuti angka countdown 3–2–1. Setelah angka hilang, tahan pose selama setengah detik sebelum dijepret. Tidak ada tulisan tambahan di tengah kamera. Jeda ini berlaku pada setiap foto dan retake. Lihat jumlah foto di indikator.
 5. Di preview, pilih foto tertentu untuk **Retake**, atau ulang semua. Tambahkan filter bila perlu.
 6. **Download PNG lokal** menyimpan kolase tanpa mengirim foto ke server. **Preview video** / **Download MP4** memproses foto edit sementara di server, lalu membersihkannya. Filter/mirror/retake membatalkan video lama agar hasil baru sesuai edit.
 7. Pilih **Simpan & bagikan**, berikan consent, lalu **Simpan ke Drive & buat QR**. Setelah dua hasil tersimpan, QR membuka folder sesi Drive berisi kolase PNG dan video MP4. Keduanya bisa dibuka siapa pun yang memiliki link; video dapat ditambahkan ke sosmed setelah download.
 8. Salin link jika scan sulit. **Jangan tutup halaman sebelum mengambil QR**, karena QR tidak tersimpan di website. Jika tertutup, file Drive **tidak hilang** tetapi user tidak mempunyai halaman riwayat untuk mencarinya.
+9. Sesudah menyimpan hasil, ketuk **Foto lagi** lalu **Ya, mulai sesi baru** untuk pengguna berikutnya. Pilih **Kembali ke hasil** bila belum selesai download/scan. Konfirmasi hanya menghapus sesi browser, bukan file di Drive. Tidak ada reset otomatis.
+
+Animasi dekoratif dapat dinonaktifkan lewat tombol ikon animasi di footer. Pengaturan reduced motion perangkat selalu diikuti. Countdown tetap tiga detik per jepretan walaupun animasi dimatikan; tiga foto menjadi video enam detik dengan urutan `1–2–3–1–2–3`, satu detik per foto. Sebelum berganti pengguna, pastikan kembali ke layar pilih frame agar hasil sebelumnya tidak tertinggal di layar.
 
 ## B. Admin: login dan tambah frame
 
@@ -28,7 +31,7 @@ Folder `photos/` tetap privat dan berisi **folder per sesi** bernama `Hoya-Hoya-
 
 ### Jika QR tidak dapat di-scan
 
-- Tekan `Copy link`, kirim ke perangkat yang dituju.
+- Tekan **Salin link**, kirim ke perangkat yang dituju.
 - Pastikan kamera bisa membaca QR (cukup terang, QR high contrast).
 - Jika Google Drive meminta login, operator harus memeriksa permission `anyone:reader` pada file hasil.
 - Jika tab sudah ditutup, tidak ada recovery otomatis di aplikasi; operator mungkin bisa menemukan file dalam Drive berdasarkan jam event.

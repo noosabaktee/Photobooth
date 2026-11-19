@@ -164,14 +164,55 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
     });
   });
   const page = await context.newPage();
+  await page.addInitScript(() => {
+    let holdStarted = 0;
+    const delays: number[] = [];
+    (window as unknown as { captureDelays: number[] }).captureDelays = delays;
+    new MutationObserver(() => {
+      if (
+        !holdStarted &&
+        document.querySelector('.service-countdown[data-holding="true"]')
+      ) {
+        holdStarted = performance.now();
+      }
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+    const draw = CanvasRenderingContext2D.prototype.drawImage;
+    CanvasRenderingContext2D.prototype.drawImage = function (
+      ...args: [image: CanvasImageSource, ...coordinates: number[]]
+    ) {
+      if (args[0] instanceof HTMLVideoElement && holdStarted) {
+        delays.push(performance.now() - holdStarted);
+        holdStarted = 0;
+      }
+      return Reflect.apply(draw, this, args);
+    };
+  });
   await page.goto("/booth");
   await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
   await page.getByRole("button", { name: "Buka kamera" }).click();
   await page.getByRole("button", { name: "Mulai countdown" }).click();
+  await expect(page.locator(".service-countdown")).toBeVisible();
+  await expect(page.locator(".service-countdown .sr-only")).toContainText(
+    "Foto 1 dari 3",
+  );
+  await expect(page.locator(".countdown-number")).toHaveText("3");
+  await expect(
+    page.locator(".service-countdown svg, .countdown-prompt"),
+  ).toHaveCount(0);
+  await page.screenshot({ path: ".qa/self-service-countdown.png" });
   await expect(
     page.getByRole("heading", { name: "Momen tim yang berkesan." }),
   ).toBeVisible({ timeout: 25000 });
   await expect(page.locator(".retake-grid button")).toHaveCount(3);
+  const delays = await page.evaluate(
+    () => (window as unknown as { captureDelays: number[] }).captureDelays,
+  );
+  expect(delays).toHaveLength(3);
+  expect(delays.every((delay) => delay >= 450)).toBe(true);
   expect(
     await page.evaluate(() =>
       (window as unknown as { testStream: MediaStream }).testStream

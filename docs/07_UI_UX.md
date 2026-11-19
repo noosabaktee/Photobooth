@@ -35,11 +35,11 @@ Fonts: gunakan font web yang bebas digunakan dan fallbacks, mis. `DM Sans` / `Pl
 
 ## 4. Booth (`/booth`)
 
-UI step header dengan indikator `1 Frame | 2 Capture | 3 Preview | 4 QR`.
+UI step header dengan indikator `1 Pilih frame | 2 Ambil foto | 3 Cek & simpan | 4 Ambil hasil`.
 
 **Frame step:** grid cards portrait/strip thumbnail 3 columns desktop, 2 mobile. Preview overlay on dummy photos, badge jumlah foto, kategori, button Select.
 
-**Capture step:** large live camera 4:3 atau portrait preview; countdown circle overlay; shot progress; primary Shutter; secondary Switch camera, Stop, Mirror. Auto capture sesuai template slots. Perfoto thumbnail strip progress.
+**Capture step:** large live camera 4:3 atau portrait preview; countdown angka sederhana; shot progress; primary Shutter; secondary Switch camera, Stop, Mirror. Auto capture sesuai template slots. Perfoto thumbnail strip progress.
 
 **Review step:** preview strip di kiri, foto thumbnail/retake control dan filter di kanan (stack pada mobile), CTA Save/Upload, local download available. Preview dan export harus identik secara crop/overlay.
 
@@ -61,7 +61,7 @@ Minimal dashboard profesional, beda tone guest tapi tetap satu brand:
 ## 6. UI microcopy (Bahasa Indonesia)
 
 - `Izinkan akses kamera untuk mulai foto. Jika ditolak, aktifkan izin melalui pengaturan browser lalu coba lagi.`
-- `Siap? Foto 1 dari 4 dalam 3…2…1!`
+- `Siap? Foto 1 dari 3 dalam 3…2…1!`
 - `Kurang cocok? Ulangi foto nomor 2 saja.`
 - `Simpan ke Drive & buat QR` (explicit action, separate from local download).
 - `Hasilmu sudah siap! Scan kode ini dengan HP.`
@@ -75,3 +75,12 @@ Minimal dashboard profesional, beda tone guest tapi tetap satu brand:
 - Support keyboard editor slot nudge, reduced motion, no flashing without control.
 - Loading placeholders prevent layout shift, no hidden CTA offscreen.
 - Test permissions on Android Chrome and iOS Safari (device testing manual); feature-detect cameras and provide permission guidance/retry. Semua foto hanya melalui kamera.
+
+## 8. Pengalaman self-service Hoya-Hoya Days
+
+- Halaman publik tetap satu layar `100dvh`, dengan kartu frame yang dapat diketuk langsung dan satu tindakan utama pada tiap tahap. Petunjuk menjelaskan izin kamera, berpose, retake, simpan dan scan QR dalam bahasa Indonesia.
+- Hero memakai strip ilustrasi yang melayang pelan, ornamen berputar, dan sorotan lembut pada tombol mulai. Kartu frame merespons hover/fokus; perpindahan tahap memakai transisi singkat.
+- Countdown hanya menampilkan angka 3–2–1 berukuran responsif 40–64px, tanpa lingkaran, teks pose atau tint yang menutupi kamera. Setelah angka hilang, tunggu 500 ms sebelum dijepret; jeda juga berlaku pada retake dan reduced motion. Posisi jepretan tetap di toolbar/thumbnail. Thumbnail yang selesai memiliki tanda centang. Animasi tidak mengubah pixel hasil PNG/MP4.
+- Setelah hasil selesai, konfeti dekoratif muncul sekali. Tombol **Foto lagi** membuka konfirmasi **Sudah menyimpan hasilmu?**; **Kembali ke hasil** mempertahankan sesi, **Ya, mulai sesi baru** membersihkan foto/video/QR di browser. File yang sudah di Drive tetap tersimpan. Tidak ada reset otomatis yang menghapus hasil sebelum diambil.
+- Footer menyediakan **Cara pakai** dalam dialog dengan tiga langkah serta kontrol animasi. Dialog bisa ditutup dengan Escape dan mengembalikan fokus ke pemicu. Kontrol animasi disimpan di memori halaman saja; `prefers-reduced-motion` selalu dihormati, termasuk perubahan pengaturan ketika halaman terbuka.
+- Animasi non-esensial bisa dimatikan tanpa menghambat kamera, editing, download atau QR. Tidak ada suara otomatis, kedipan flash atau dependensi animasi tambahan. Dialog bantuan/privasi dapat menggulir di layar pendek; halaman utama tetap tidak bergulir.

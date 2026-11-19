@@ -124,7 +124,11 @@ for (const viewport of [
       page.getByRole("heading", { name: /Demo selesai/ }),
     ).toBeVisible();
     await fits(page);
-    await page.getByRole("button", { name: "Take another" }).click();
+    await page.getByRole("button", { name: "Foto lagi", exact: true }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Sudah menyimpan hasilmu?" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Ya, mulai sesi baru" }).click();
     await expect(
       page.getByRole("button", { name: "Pilih Pink Gingham" }),
     ).toBeVisible();

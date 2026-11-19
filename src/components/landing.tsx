@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, Camera, Heart, Sparkles, ScanLine } from "lucide-react";
+import {
+  ArrowRight,
+  Camera,
+  Heart,
+  Sparkles,
+  ScanLine,
+  Hand,
+  Check,
+} from "lucide-react";
 import { Header } from "@/components/shared";
 import { KioskFooter } from "@/components/kiosk";
 import { Gallery } from "@/components/gallery";
@@ -33,7 +41,7 @@ export function Landing({ view }: { view: "home" | "how" | "frames" }) {
               <PaperStrip side="right" />
               <div className="hero-content">
                 <div className="eyebrow">
-                  <span className="live-dot" /> {eventIdentity.company}
+                  <span className="live-dot" /> SELF-SERVICE PHOTO CORNER
                 </div>
                 <h1>
                   Hoya-Hoya
@@ -44,18 +52,26 @@ export function Landing({ view }: { view: "home" | "how" | "frames" }) {
                   </span>
                 </h1>
                 <p>
-                  Saatnya seru-seruan bareng keluarga besar KMI.
-                  <br className="desktop-break" /> Ajak rekan satu tim, pilih
-                  pose, dan abadikan kebersamaan kita.
+                  Ajak timmu. Siapkan pose paling seru.
+                  <br className="desktop-break" /> Tinggal ketuk, foto, dan bawa
+                  pulang kenangannya!
                 </p>
                 <Button asChild className="hero-cta">
                   <Link href="/booth">
-                    <Camera size={20} /> Mulai foto bareng{" "}
+                    <Hand size={22} /> Mulai foto bareng{" "}
                     <ArrowRight size={19} />
                   </Link>
                 </Button>
-                <span className="hero-caption">
-                  3 jepretan · Banyak senyuman · Kenangan untuk dibawa pulang
+                <span className="hero-caption service-quick-steps">
+                  <span>
+                    <Sparkles size={13} /> Pilih frame
+                  </span>
+                  <span>
+                    <Camera size={13} /> 3 jepretan
+                  </span>
+                  <span>
+                    <Check size={13} /> PNG + video
+                  </span>
                 </span>
               </div>
               <span className="hero-spark spark-one" aria-hidden="true">

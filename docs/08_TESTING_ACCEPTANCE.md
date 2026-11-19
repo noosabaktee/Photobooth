@@ -56,6 +56,8 @@ Pengujian video meliputi MP4 H.264 1080 × 1920/30 fps/enam detik tanpa audio, u
 
 **E2E-03 Negative:** camera denied → panduan izin dan retry kamera, tanpa picker foto galeri; invalid overlay → publish blocked; upload fail → no QR + preserved local export; refresh result → no persisted session/QR.
 
+**E2E-04 Self-service:** bantuan **Cara pakai** dapat dibuka via keyboard dan ditutup Escape dengan fokus kembali; kontrol animasi mematikan efek, lalu perubahan preferensi reduced motion perangkat langsung dihormati. Countdown hanya menampilkan angka dan tetap memberi jeda 500 ms sebelum capture. Konfirmasi **Foto lagi** yang dibatalkan menjaga URL hasil; konfirmasi sesi baru membersihkan preview/QR. Sembilan viewport 320×568 hingga 1920×1080 memeriksa halaman dan kontrol tetap muat tanpa scroll; fixture QR memakai respons test-only tanpa upload Drive riil.
+
 ## 5. Manual real Google Drive smoke
 
 After operator has configured OAuth:

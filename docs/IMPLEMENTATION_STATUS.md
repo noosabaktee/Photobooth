@@ -1,4 +1,25 @@
-# Implementation status — 18 November 2026
+# Implementation status — 19 November 2026
+
+## Countdown sederhana — angka saja
+
+- `self-service.tsx`, `self-service.css`, `booth.tsx`: mengembalikan countdown menjadi angka 3–2–1 ukuran 40–64px, tanpa lingkaran, ajakan pose, centang besar atau lapisan gelap. Badge kamera siap disembunyikan selama capture. Selama jeda 500 ms, tidak ada elemen countdown visual; status aksesibel tetap tersedia.
+- Jeda 500 ms dan pemeriksaan pembatalan sebelum capture dipertahankan untuk setiap foto/retake. Regresi pengukuran jeda memakai atribut fase alih-alih teks visual. Dokumentasi diperbarui.
+- Verifikasi PASS: format/lint/typecheck, 46 unit/integration tests, tiga E2E kamera dan viewport 320×568/667×375, serta production build. Screenshot countdown diperiksa: preview kamera tetap jelas dan hanya angka kecil di tengah. Tidak melakukan deploy atau upload Drive riil.
+
+## Jeda sesudah countdown
+
+- `booth.tsx`: setelah hitungan 3–2–1, tunggu tambahan 500 ms sebelum mengambil pixel kamera, untuk tiap jepretan dan retake. Guard pembatalan diperiksa lagi setelah jeda sehingga Stop/pergantian tab tetap membatalkan capture.
+- `self-service.tsx`, `kiosk.tsx`: tampilkan **Tahan pose!** dengan tanda centang, tanpa menampilkan angka nol; petunjuk bantuan dan operasi diperbarui. Timer tetap berjalan ketika animasi dimatikan. Durasi video hasil tetap enam detik.
+- Regresi browser mengukur jeda nyata dari munculnya petunjuk sampai pixel kamera diambil untuk ketiga foto. Fixture kamera cepat mengakomodasi timer tambahan. Verifikasi PASS: 46 unit/integration, empat E2E terkait capture/retake dan viewport kecil, format/lint/typecheck serta production build. Smoke tambahan menekan Stop selama jeda: tidak ada foto terambil dan semua track kamera berhenti. Tidak melakukan upload Drive atau deploy.
+
+## Revisi self-service — panduan interaktif dan animasi
+
+- `landing.tsx`, `gallery.tsx`, `self-service.css`: CTA mulai lebih menonjol, petunjuk singkat, strip ilustrasi melayang, ornamen dan transisi kartu/tahap; identitas Hoya-Hoya Days/KMI dan kiosk satu layar dipertahankan.
+- `booth.tsx`, `self-service.tsx`: countdown lingkaran/angka besar, ajakan pose per jepretan, indikator kamera siap, centang thumbnail dan konfeti sekali pada hasil. Timing kamera tiga detik dan video enam detik tidak berubah. Tombol **Foto lagi** meminta konfirmasi; membatalkannya menjaga hasil, menyetujuinya membersihkan sesi browser saja.
+- `kiosk.tsx`: bantuan tiga langkah **Cara pakai**, kontrol animasi di memori, native dialog dengan keyboard/Escape/fokus dan dukungan perubahan `prefers-reduced-motion`. Halaman utama tidak bergulir; dialog panjang dapat bergulir di layar pendek. Tidak menambah penyimpanan, audio otomatis, API atau dependency.
+- Kontras placeholder kamera diperjelas; status proses tidak lagi menutupi Stop. Hero memenuhi lebar layar besar, link koleksi HP memiliki latar sendiri, dan dialog dipusatkan. Fokus awal dialog berada pada judul agar tidak langsung bergulir ke tombol terakhir; bantuan landscape menggunakan tiga kolom ringkas.
+- Verifikasi PASS: format, lint, typecheck, 46 unit/integration tests, 20 E2E Chromium dan production build. Setelah perbaikan akhir dialog/hero, lima regresi browser terkait dijalankan ulang dan PASS, termasuk keyboard/fokus, reduced motion, konfirmasi sesi dan viewport 1920×1080, 320×568, 667×375. Sembilan viewport dalam suite lengkap tetap muat tanpa scroll; fixture QR tidak menyentuh Drive.
+- Screenshot hero, kamera, countdown, bantuan, konfirmasi dan hasil/QR desktop/HP/landscape diperiksa; artefak hanya di `.qa/` ignored. README, panduan UI/UX, testing dan operasi diperbarui. Tidak menjalankan deploy atau upload Drive riil untuk perubahan UI ini. Pengujian perangkat kamera fisik dan browser Safari/Firefox tetap memerlukan operator sebelum event.
 
 ## Revisi tempo video — 1 → 2 → 3 → 1 → 2 → 3
 

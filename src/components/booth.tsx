@@ -16,6 +16,7 @@ import QRCode from "qrcode";
 import { Gallery } from "./gallery";
 import { Button } from "./ui/button";
 import { KioskMessage } from "./kiosk";
+import { CaptureCountdown, Celebration, NextGuestButton } from "./self-service";
 import { requestJson } from "@/lib/client";
 import type { PublicFrame } from "@/lib/schema";
 import {
@@ -39,7 +40,7 @@ type Result =
       folderName: string;
       files: { fileId: string; filename: string; mimeType: string }[];
     };
-const labels = ["Pilih frame", "Jepret", "Review & edit", "Hasilmu"];
+const labels = ["Pilih frame", "Ambil foto", "Cek & simpan", "Ambil hasil"];
 export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
   const [movie, setMovie] = useState<{ blob: Blob; url: string } | null>(null);
   const [preview, setPreview] = useState<"photo" | "video">("photo");
@@ -282,6 +283,9 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         if (run !== sequence.current) return;
+        setCountdown(0);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (run !== sequence.current) return;
         setCountdown(null);
         const v = video.current;
         if (!v?.videoWidth)
@@ -480,7 +484,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
           </li>
         ))}
       </ol>
-      <div className="booth-heading">
+      <div className="booth-heading" key={step}>
         <p className="eyebrow">{eventIdentity.name} · KMI PHOTOBOOTH</p>
         <h1>
           {
@@ -494,10 +498,14 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         </h1>
         <p>
           {step === 0
-            ? "Pilih frame favorit, lalu ajak rekanmu foto bareng."
-            : frame
-              ? `${frame.name} · ${frame.slots.length} foto · ${frame.dimensions.width} × ${frame.dimensions.height} px`
-              : ""}
+            ? "Ketuk langsung gambar frame yang kamu suka. Yuk, mulai!"
+            : step === 1
+              ? camera
+                ? "Posisikan diri, lalu ketuk Mulai countdown. Foto diambil otomatis."
+                : "Ketuk Buka kamera, lalu pilih Izinkan pada browser."
+              : step === 2
+                ? "Cek jepretanmu. Kalau sudah suka, lanjut Simpan & bagikan."
+                : "Scan QR atau download hasil, lalu ketuk Foto lagi untuk sesi berikutnya."}
         </p>
       </div>
       {mode === "mock" && (
@@ -512,12 +520,16 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         <KioskMessage message={notice} onDismiss={() => setNotice("")} />
       )}
       {busy && (
-        <p className="busy" role="status">
+        <p
+          className={`busy ${step === 1 ? "camera-status" : ""}`}
+          role="status"
+        >
           <span className="spinner" />
           {busy}
         </p>
       )}
       <div className="booth-workspace">
+        {step === 3 && result && <Celebration />}
         {step === 0 && (
           <Gallery onSelect={(f) => void select(f)} disabled={!!busy} />
         )}
@@ -535,19 +547,32 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 />
                 {!camera && (
                   <div className="camera-placeholder">
-                    <Camera size={54} />
+                    <span className="camera-welcome-icon">
+                      <Camera size={44} />
+                    </span>
                     <h2>Halo, calon kenangan! ♡</h2>
-                    <p>Aktifkan kamera saat kamu siap.</p>
+                    <p>
+                      Rekan satu tim sudah siap? Ketuk Buka kamera di bawah.
+                    </p>
                   </div>
                 )}
+                {camera && countdown === null && !busy && (
+                  <span className="camera-ready-badge">
+                    <span />
+                    Kamera siap · waktunya berpose!
+                  </span>
+                )}
                 {countdown !== null && (
-                  <div
-                    className="countdown"
-                    role="status"
-                    aria-live="assertive"
-                  >
-                    {countdown}
-                  </div>
+                  <CaptureCountdown
+                    value={countdown}
+                    shot={shot}
+                    total={frame.slots.length}
+                  />
+                )}
+                {camera && countdown === null && !busy && (
+                  <span className="camera-position-hint">
+                    Lihat kamera, rapatkan barisan, dan senyum!
+                  </span>
                 )}
                 <span className="camera-corner top-left" />
                 <span className="camera-corner bottom-right" />
@@ -572,7 +597,11 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                   <>
                     <Button onClick={() => void capture()} disabled={!!busy}>
                       <Camera size={19} />
-                      {retake === null ? "Mulai countdown" : "Ambil ulang foto"}
+                      {busy
+                        ? "Sedang foto…"
+                        : retake === null
+                          ? "Mulai countdown"
+                          : "Ambil ulang foto"}
                     </Button>
                     <Button
                       variant="secondary"
@@ -586,7 +615,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                   </>
                 ) : (
                   <Button onClick={() => void openCamera()} disabled={!!busy}>
-                    <Camera size={19} /> Buka kamera
+                    <Camera size={19} />
+                    {busy ? "Menyiapkan kamera…" : "Buka kamera"}
                   </Button>
                 )}
               </div>
@@ -629,7 +659,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 {frame.slots.map((s, i) => (
                   <div
                     key={s.id}
-                    className={i === shot ? "active" : ""}
+                    className={`${i === shot ? "active" : ""} ${photos[i] ? "captured" : ""}`}
                     aria-label={`Jepretan ${i + 1}${photos[i] ? " selesai" : " belum diambil"}`}
                   >
                     {photos[i] ? (
@@ -643,12 +673,17 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                     ) : (
                       <span>{i + 1}</span>
                     )}
+                    {photos[i] && (
+                      <span className="capture-done" aria-hidden="true">
+                        <Check size={13} />
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
               <p className="small">
-                Kamera memerlukan HTTPS atau localhost. Foto asli tetap di
-                browser.
+                Foto kurang cocok? Nanti bisa diulang satu per satu. Tidak perlu
+                buru-buru.
               </p>
               {photos.length === frame.slots.length && (
                 <Button
@@ -924,7 +959,10 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 </p>
               ) : (
                 <>
-                  <p>Scan QR untuk folder kolase PNG + video MP4.</p>
+                  <p>
+                    Arahkan kamera HP ke QR. Kolase PNG + video MP4 ada di satu
+                    folder.
+                  </p>
                   {qr && (
                     <img
                       className="qr"
@@ -943,12 +981,12 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                           .then(() => setNotice("Link tersalin."))
                           .catch(() =>
                             setError(
-                              "Tidak dapat menyalin. Gunakan tombol Open in Drive.",
+                              "Tidak dapat menyalin. Gunakan tombol Buka Drive.",
                             ),
                           );
                       }}
                     >
-                      <Copy size={17} /> Copy link
+                      <Copy size={17} /> Salin link
                     </Button>
                     <Button asChild>
                       <a
@@ -956,7 +994,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <ExternalLink size={17} /> Open in Drive
+                        <ExternalLink size={17} /> Buka Drive
                       </a>
                     </Button>
                   </div>
@@ -977,9 +1015,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 >
                   <Download size={18} /> MP4
                 </Button>
-                <Button variant="ghost" disabled={!!busy} onClick={reset}>
-                  <RefreshCw size={17} /> Take another
-                </Button>
+                <NextGuestButton disabled={!!busy} onConfirm={reset} />
               </div>
               <p className="small">
                 Simpan sebelum keluar. QR hilang saat refresh; kolase dan video

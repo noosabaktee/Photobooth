@@ -1,20 +1,89 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ShieldCheck, X } from "lucide-react";
+import {
+  ShieldCheck,
+  X,
+  CircleHelp,
+  Sparkles,
+  Pause,
+  Camera,
+  ScanLine,
+  Layers,
+} from "lucide-react";
 import { Privacy } from "./shared";
 import { Button } from "./ui/button";
+import { openKioskDialog } from "./self-service";
 import { eventIdentity } from "@/lib/event";
+function subscribeMotion(callback: () => void) {
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  query.addEventListener("change", callback);
+  window.addEventListener("kiosk-motion-change", callback);
+  return () => {
+    query.removeEventListener("change", callback);
+    window.removeEventListener("kiosk-motion-change", callback);
+  };
+}
+function motionEnabled() {
+  return (
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+    document.documentElement.dataset.kioskMotion !== "off"
+  );
+}
 export function KioskFooter() {
   const dialog = useRef<HTMLDialogElement>(null);
+  const help = useRef<HTMLDialogElement>(null);
+  const motion = useSyncExternalStore(
+    subscribeMotion,
+    motionEnabled,
+    () => false,
+  );
+  const reduced = useSyncExternalStore(
+    subscribeMotion,
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => true,
+  );
   return (
     <>
       <footer className="kiosk-footer">
         <span>
           {eventIdentity.name} · {eventIdentity.company}
         </span>
-        <button onClick={() => dialog.current?.showModal()}>
+        <button onClick={() => openKioskDialog(dialog.current)}>
           <ShieldCheck size={15} /> Privasi foto
+        </button>
+        <button
+          className="kiosk-help-button"
+          onClick={() => openKioskDialog(help.current)}
+        >
+          <CircleHelp size={16} /> Cara pakai
+        </button>
+        <button
+          className="motion-toggle"
+          disabled={reduced}
+          aria-label={
+            reduced
+              ? "Animasi mengikuti pengaturan perangkat"
+              : motion
+                ? "Nonaktifkan animasi"
+                : "Aktifkan animasi"
+          }
+          aria-pressed={motion}
+          title={
+            reduced
+              ? "Reduced motion aktif di perangkat"
+              : motion
+                ? "Nonaktifkan animasi"
+                : "Aktifkan animasi"
+          }
+          onClick={() => {
+            document.documentElement.dataset.kioskMotion = motion
+              ? "off"
+              : "on";
+            window.dispatchEvent(new Event("kiosk-motion-change"));
+          }}
+        >
+          {motion ? <Sparkles size={16} /> : <Pause size={16} />}
         </button>
         <Link href="/admin" aria-label="Ruang pengelola">
           Admin ↗
@@ -25,10 +94,60 @@ export function KioskFooter() {
         ref={dialog}
         aria-labelledby="privacy-title"
       >
-        <h2 id="privacy-title">Momenmu, pilihanmu.</h2>
+        <h2 id="privacy-title" tabIndex={-1}>
+          Momenmu, pilihanmu.
+        </h2>
         <Privacy />
         <Button onClick={() => dialog.current?.close()}>
           <X size={17} /> Tutup
+        </Button>
+      </dialog>
+      <dialog
+        className="kiosk-dialog service-help-dialog"
+        ref={help}
+        aria-labelledby="kiosk-help-title"
+      >
+        <p className="eyebrow">BISA SENDIRI, SERUNYA BARENG</p>
+        <h2 id="kiosk-help-title" tabIndex={-1}>
+          Tinggal ketuk, pose, simpan.
+        </h2>
+        <ol className="help-steps">
+          <li>
+            <span>
+              <Layers size={22} />
+            </span>
+            <div>
+              <strong>Pilih frame favorit</strong>
+              <p>Ketuk langsung gambar frame yang kamu suka.</p>
+            </div>
+          </li>
+          <li>
+            <span>
+              <Camera size={22} />
+            </span>
+            <div>
+              <strong>Izinkan kamera & bersiap</strong>
+              <p>
+                Ketuk Buka kamera, pilih Izinkan, lalu Mulai countdown. Ada
+                hitungan 3 detik, lalu tahan pose sebentar sebelum dijepret.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span>
+              <ScanLine size={22} />
+            </span>
+            <div>
+              <strong>Simpan kenanganmu</strong>
+              <p>
+                Ulangi foto bila perlu. Download PNG/MP4, atau setujui simpan ke
+                Drive lalu scan QR. Ketuk Foto lagi setelah selesai.
+              </p>
+            </div>
+          </li>
+        </ol>
+        <Button onClick={() => help.current?.close()}>
+          <Sparkles size={17} /> Oke, mengerti
         </Button>
       </dialog>
     </>
@@ -49,7 +168,7 @@ export function KioskMessage({
       <p role={error ? "alert" : "status"}>{message}</p>
       <button
         aria-label="Detail pesan"
-        onClick={() => dialog.current?.showModal()}
+        onClick={() => openKioskDialog(dialog.current)}
       >
         Detail
       </button>
@@ -63,7 +182,9 @@ export function KioskMessage({
         aria-labelledby="message-title"
         ref={dialog}
       >
-        <h2 id="message-title">{error ? "Ada kendala" : "Informasi"}</h2>
+        <h2 id="message-title" tabIndex={-1}>
+          {error ? "Ada kendala" : "Informasi"}
+        </h2>
         <p>{message}</p>
         <Button onClick={() => dialog.current?.close()}>Mengerti</Button>
       </dialog>

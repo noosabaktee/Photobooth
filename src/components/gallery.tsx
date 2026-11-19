@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { Hand, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import type { PublicFrame } from "@/lib/schema";
 import { requestJson } from "@/lib/client";
 import { Button } from "./ui/button";
@@ -138,7 +138,7 @@ export function Gallery({
                     <span className="frame-title">{frame.name}</span>
                   </span>
                   <span className="frame-arrow" aria-hidden="true">
-                    <ArrowUpRight size={20} />
+                    <Hand size={20} />
                   </span>
                 </span>
               </>

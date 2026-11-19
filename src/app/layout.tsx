@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./kiosk.css";
 import "./event.css";
+import "./self-service.css";
 import { eventIdentity } from "@/lib/event";
 export const metadata: Metadata = {
   title: {
