@@ -6,6 +6,11 @@ import original from "../examples/starter-frames/original-layouts.json" with { t
 import { draftSchema, type Slot } from "../src/lib/schema";
 import { validateAlpha, validateImage } from "../src/lib/uploads";
 import { eventIdentity } from "../src/lib/event";
+import {
+  starterBackdrop,
+  starterPalette,
+  type StarterStyle,
+} from "../src/lib/starter-artwork";
 const root = path.join(process.cwd(), "examples/starter-frames");
 type Seed = (typeof original.frames)[number];
 type ThreeShotSeed = Omit<Seed, "slots"> & {
@@ -123,15 +128,27 @@ for (const source of original.frames) {
     : source.category === "pastel"
       ? "#9a4964"
       : "#287569";
+  const style: StarterStyle = vintage
+    ? "film"
+    : source.category === "pastel"
+      ? "gingham"
+      : "mint";
+  const footerBackground = await sharp(
+    Buffer.from(starterBackdrop(style, width, height)),
+  )
+    .extract({ left: 0, top: footerTop, width, height: footerHeight })
+    .png()
+    .toBuffer();
   const eventHeader = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect x="${width * 0.17}" y="${headerHeight * 0.17}" width="${width * 0.66}" height="${headerHeight * 0.67}" rx="12" fill="${headerFill}"/><text x="${width / 2}" y="${headerHeight * 0.53}" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="${Math.min(width * 0.06, headerHeight * 0.29)}" fill="${headerInk}">HOYA-HOYA DAYS</text><text x="${width / 2}" y="${headerHeight * 0.73}" text-anchor="middle" font-family="sans-serif" font-size="${headerHeight * 0.1}" fill="${headerInk}">KMI PHOTOBOOTH</text></svg>`,
   );
   const eventSignature = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect x="0" y="${footerTop}" width="${width}" height="${footerHeight}" fill="#f8fbf3"/><rect x="32" y="${footerTop + 10}" width="${width - 64}" height="${footerHeight - 30}" rx="20" fill="#087443"/><g text-anchor="middle" font-family="sans-serif" fill="white"><text x="${width / 2}" y="${footerTop + footerHeight * 0.4}" font-size="${Math.min(width * 0.06, footerHeight * 0.27)}" font-weight="bold">${eventIdentity.name}</text><text x="${width / 2}" y="${footerTop + footerHeight * 0.62}" font-size="${Math.min(width * 0.027, footerHeight * 0.15)}">${eventIdentity.company}</text><text x="${width / 2}" y="${footerTop + footerHeight * 0.8}" font-size="${Math.min(width * 0.023, footerHeight * 0.13)}" fill="#dcecac">${eventIdentity.tagline}</text></g></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><g text-anchor="middle" font-family="sans-serif" fill="${starterPalette[style].ink}"><text x="${width / 2}" y="${footerTop + footerHeight * 0.4}" font-size="${Math.min(width * 0.06, footerHeight * 0.27)}" font-weight="bold">${eventIdentity.name}</text><text x="${width / 2}" y="${footerTop + footerHeight * 0.62}" font-size="${Math.min(width * 0.027, footerHeight * 0.15)}">${eventIdentity.company}</text><text x="${width / 2}" y="${footerTop + footerHeight * 0.8}" font-size="${Math.min(width * 0.023, footerHeight * 0.13)}">${eventIdentity.tagline}</text></g></svg>`,
   );
   overlay = await sharp(overlay)
     .composite([
       { input: eventHeader, left: 0, top: 0 },
+      { input: footerBackground, left: 0, top: footerTop },
       { input: eventSignature, left: 0, top: 0 },
     ])
     .png()

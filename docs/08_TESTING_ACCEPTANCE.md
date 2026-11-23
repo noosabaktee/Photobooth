@@ -1,6 +1,10 @@
 # 08 — Test plan and acceptance checklist
 
+Preview pilih frame, kartu admin dan preview builder kini menampilkan proporsi/desain hasil lengkap, termasuk penanda non-scannable AREA QR. Tidak ada link/QR palsu sebelum folder sesi tersedia. PNG hasil, video MP4 dan QR layar memakai URL folder yang sama; MP4 mengikuti tema frame dan QR tampil sepanjang enam detik. Preview/download MP4 menggunakan byte final yang sama dengan Drive. Tema custom tanpa identitas seed memakai kartu video mint sebagai default.
+
 Pengujian video meliputi MP4 H.264 1080 × 1920/30 fps/enam detik tanpa audio, urutan pose `1 → 2 → 3 → 1 → 2 → 3` (satu detik per foto) dari pixel seluruh 180 frame decode, validasi stream rusak/berlebih, cleanup temp, consent pemrosesan, preview/download dan upload PNG + MP4. QR terbaru menunjuk folder sesi yang terverifikasi; kegagalan upload kedua atau ACL anak membatalkan seluruh hasil. Lihat [13_BOOMERANG.md](13_BOOMERANG.md).
+
+Regresi preview proses: Chromium menyuntikkan overlay signature hijau lama pada ketiga seed, menahan respons upload lalu membandingkan ukuran dan pixel latar dengan renderer cetak server. Seluruh area bawah foto diperiksa bebas panel hijau dan tidak mengandung QR palsu. Gagal upload/retry/demo mempertahankan preview; retry mengirim komposisi mentah identik, bukan PNG yang sudah ditambah footer.
 
 ## 1. Required test scripts
 
@@ -50,13 +54,15 @@ Pengujian video meliputi MP4 H.264 1080 × 1920/30 fps/enam detik tanpa audio, u
 
 ## 4. End-to-end UI scenarios
 
-**E2E-01 Guest:** landing → frame gallery → klik gambar frame tiga slot → synthetic camera → 3 captures → retake photo 3 → preview composite → local PNG export → mock upload demo result. In real Drive mode, validated response shows QR link.
+**E2E-01 Guest:** landing → frame tiga slot → Buka kamera langsung aktif tanpa checkbox → synthetic camera → 3 captures → kolase natural + MP4 → satu upload otomatis → hasil mock tanpa QR palsu. Unduh PNG/MP4, cek warna natural/mirror, durasi MP4 enam detik dan refresh menghapus sesi. Panel nuansa/review/retake tidak tampil.
 
-**E2E-02 Admin:** login → add frame → upload PNG valid 1200x3600 → add/position 4 slots → preview → save draft → publish → see frame public → unpublish → public frame absent.
+**E2E-02 Admin:** login → ubah durasi scan 15 ke 25 → refresh membuktikan persistensi → kembalikan ke 15 → tambah PNG tiga slot → preview/draft/publish → edit/unpublish/archive/logout. Tes route melindungi settings read/write, origin, batas dan konflik revisi.
 
 **E2E-03 Negative:** camera denied → panduan izin dan retry kamera, tanpa picker foto galeri; invalid overlay → publish blocked; upload fail → no QR + preserved local export; refresh result → no persisted session/QR.
 
 **E2E-04 Self-service:** bantuan **Cara pakai** dapat dibuka via keyboard dan ditutup Escape dengan fokus kembali; kontrol animasi mematikan efek, lalu perubahan preferensi reduced motion perangkat langsung dihormati. Countdown hanya menampilkan angka dan tetap memberi jeda 500 ms sebelum capture. Konfirmasi **Foto lagi** yang dibatalkan menjaga URL hasil; konfirmasi sesi baru membersihkan preview/QR. Sembilan viewport 320×568 hingga 1920×1080 memeriksa halaman dan kontrol tetap muat tanpa scroll; fixture QR memakai respons test-only tanpa upload Drive riil.
+
+**E2E-05 QR cetak/timer:** unduh PNG final fixture dan decode QR menjadi URL folder yang sama; QR layar memulai timer 15 detik, setelah habis galeri tampil dan Buka kamera pada sesi baru langsung aktif tanpa checkbox. Pengukuran jeda memakai kamera sintetis dengan timer nyata. Upload gagal + simulasi 16 detik tidak boleh reset; retry memakai cache MP4. Unit test ketiga seed memeriksa tema badan frame sampai ke area QR, tidak ada panel hijau, pixel foto tidak berubah, serta QR dapat didecode. Uji memakai overlay seed baru dan simulasi overlay hijau lama. E2E Vintage mengunduh PNG, memeriksa pixel background hitam dan decode folder QR. Fallback frame tanpa footer mempertahankan semua pixel asli dan mengikuti warna tepi. Snapshot layout salah/rusak ditolak. Byte PNG Drive/preview identik. Tambahkan smoke cetak fisik operator dan scan HP sebelum event; otomatis tidak mengklaim hasil printer nyata.
 
 ## 5. Manual real Google Drive smoke
 

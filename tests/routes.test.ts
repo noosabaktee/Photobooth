@@ -23,6 +23,66 @@ import {
 import { GET as publicDetail } from "@/app/api/frames/[id]/route";
 import { POST as photo } from "@/app/api/photos/route";
 import { SESSION_COOKIE, signSession } from "@/lib/auth";
+import {
+  GET as adminSettings,
+  PUT as updateSettings,
+} from "@/app/api/admin/settings/route";
+import { GET as publicSettings } from "@/app/api/settings/route";
+import { POST as adminPreview } from "@/app/api/admin/preview/route";
+import seeds from "../examples/starter-frames/starter-frames.json";
+
+it("unsaved result previews require admin/origin and validate image dimensions", async () => {
+  expect((await adminPreview(json("/", {}))).status).toBe(401);
+  jar.set(SESSION_COOKIE, await signSession());
+  expect((await adminPreview(json("/", {}, "https://evil.test"))).status).toBe(
+    403,
+  );
+  const form = new FormData();
+  form.set("metadata", JSON.stringify({ ...seeds.frames[1], tags: [] }));
+  form.set(
+    "overlay",
+    new Blob(
+      [
+        new Uint8Array(
+          await readFile("examples/starter-frames/vintage-film-3.png"),
+        ),
+      ],
+      { type: "image/png" },
+    ),
+    "overlay.png",
+  );
+  const response = await adminPreview(
+    new Request("http://localhost:3000/api/admin/preview", {
+      method: "POST",
+      headers: { Origin: "http://localhost:3000" },
+      body: form,
+    }),
+  );
+  expect(response.status).toBe(200);
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
+  expect(
+    await sharp(Buffer.from(await response.arrayBuffer())).metadata(),
+  ).toMatchObject({ width: 1000, height: 3136 });
+  form.set(
+    "metadata",
+    JSON.stringify({
+      ...seeds.frames[1],
+      dimensions: { width: 1100, height: 2486 },
+      tags: [],
+    }),
+  );
+  expect(
+    (
+      await adminPreview(
+        new Request("http://localhost:3000/api/admin/preview", {
+          method: "POST",
+          headers: { Origin: "http://localhost:3000" },
+          body: form,
+        }),
+      )
+    ).status,
+  ).toBe(400);
+}, 30000);
 beforeAll(async () => {
   process.env.STORAGE_MODE = "mock";
   process.env.ADMIN_SESSION_SECRET =
@@ -45,6 +105,31 @@ const json = (path: string, body: unknown, origin = "http://localhost:3000") =>
     headers: { Origin: origin, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+it("settings writes require admin, allowed origin, valid bounds and current revision", async () => {
+  expect((await adminSettings()).status).toBe(401);
+  expect((await updateSettings(json("/", {}))).status).toBe(401);
+  expect(await (await publicSettings()).json()).toEqual({ scanSeconds: 15 });
+  jar.set(SESSION_COOKIE, await signSession());
+  expect(
+    (await updateSettings(json("/", {}, "https://evil.test"))).status,
+  ).toBe(403);
+  expect(
+    (await updateSettings(json("/", { scanSeconds: 301, expectedRevision: 0 })))
+      .status,
+  ).toBe(400);
+  const saved = await updateSettings(
+    json("/", { scanSeconds: 25, expectedRevision: 0 }),
+  );
+  expect(saved.status).toBe(200);
+  expect(await saved.json()).toMatchObject({
+    settings: { scanSeconds: 25, revision: 1 },
+  });
+  expect(await (await publicSettings()).json()).toEqual({ scanSeconds: 25 });
+  expect(
+    (await updateSettings(json("/", { scanSeconds: 30, expectedRevision: 0 })))
+      .status,
+  ).toBe(409);
+});
 it("protects every admin read/mutation and never returns drafts publicly", async () => {
   const context = {
     params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000001" }),
@@ -161,6 +246,34 @@ it("photo endpoint requires origin, consent, real MIME and one final image", asy
       { type: "image/png" },
     ),
     "final.png",
+  );
+  for (const printLayout of [
+    "{",
+    JSON.stringify({
+      dimensions: { width: 1200, height: 2826 },
+      photoBottom: 3000,
+    }),
+    JSON.stringify({
+      dimensions: { width: 1000, height: 2826 },
+      photoBottom: 2508,
+    }),
+  ]) {
+    valid.set("printLayout", printLayout);
+    const rejected = await photo(
+      new Request("http://localhost:3000/api/photos", {
+        method: "POST",
+        headers: { Origin: "http://localhost:3000" },
+        body: valid,
+      }),
+    );
+    expect(rejected.status).toBe(400);
+  }
+  valid.set(
+    "printLayout",
+    JSON.stringify({
+      dimensions: { width: 1200, height: 2826 },
+      photoBottom: 2508,
+    }),
   );
   const response = await photo(
     new Request("http://localhost:3000/api/photos", {

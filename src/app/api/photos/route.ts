@@ -4,6 +4,7 @@ import { boundedForm, PHOTO_LIMIT, validateImage } from "@/lib/uploads";
 import { backend, saveSession, storageMode } from "@/lib/storage";
 import { validateVideo } from "@/lib/video-server";
 import { BOOMERANG_VIDEO_BYTES } from "@/lib/boomerang";
+import { printLayoutSchema } from "@/lib/print-layout";
 export const runtime = "nodejs";
 export const maxDuration = 180;
 export async function POST(request: Request) {
@@ -16,6 +17,23 @@ export async function POST(request: Request) {
     );
     const photo = form.get("photo");
     const video = form.get("video");
+    const rawLayout = form.get("printLayout");
+    let printLayout;
+    if (rawLayout !== null) {
+      if (
+        typeof rawLayout !== "string" ||
+        rawLayout.length > 1024 ||
+        form.getAll("printLayout").length !== 1
+      )
+        fail(400, "VALIDATION_ERROR", "Layout cetak tidak valid.");
+      let value: unknown;
+      try {
+        value = JSON.parse(rawLayout);
+      } catch {
+        fail(400, "VALIDATION_ERROR", "Layout cetak tidak valid.");
+      }
+      printLayout = printLayoutSchema.parse(value);
+    }
     if (form.get("consent") !== "true")
       fail(
         400,
@@ -31,7 +49,17 @@ export async function POST(request: Request) {
         "Kirim tepat satu video boomerang MP4 bersama kolase.",
       );
     const bytes = Buffer.from(await photo.arrayBuffer());
-    await validateImage(bytes, photo.type);
+    const dimensions = await validateImage(bytes, photo.type);
+    if (
+      printLayout &&
+      (printLayout.dimensions.width !== dimensions.width ||
+        printLayout.dimensions.height !== dimensions.height)
+    )
+      fail(
+        400,
+        "VALIDATION_ERROR",
+        "Dimensi layout cetak tidak cocok dengan kolase.",
+      );
     const movie = Buffer.from(await video.arrayBuffer());
     await validateVideo(movie, video.type);
     return Response.json(
@@ -41,6 +69,7 @@ export async function POST(request: Request) {
         bytes,
         photo.type,
         movie,
+        printLayout,
       ),
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );

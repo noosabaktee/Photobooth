@@ -10,6 +10,7 @@ import {
 import { fail } from "../errors";
 import { validateImage, validateAlpha } from "../uploads";
 import type { Backend } from "./backend";
+import { renderFramePreview } from "../frame-preview";
 export class FrameRepository {
   constructor(public backend: Backend) {}
   private async entries() {
@@ -63,6 +64,19 @@ export class FrameRepository {
         : frame.assetHistory.find((a) => a.overlay.version === version);
     const asset = assets?.[kind as "overlay" | "thumbnail"];
     if (!asset) fail(404, "NOT_FOUND", "Versi aset tidak ditemukan.");
+    if (kind === "thumbnail" && version === frame.overlay.version) {
+      const preview = await renderFramePreview(
+        frame,
+        await this.backend.read(assets!.overlay.fileId),
+      );
+      return {
+        bytes: await sharp(preview)
+          .resize({ width: 360, withoutEnlargement: true })
+          .webp({ quality: 86 })
+          .toBuffer(),
+        mimeType: "image/webp",
+      };
+    }
     return {
       bytes: await this.backend.read(asset.fileId),
       mimeType: asset.mimeType,
@@ -114,7 +128,7 @@ export class FrameRepository {
       if (overlay) newAssets.push(overlayId);
       let thumbnail = old?.thumbnail || null;
       if (overlay) {
-        const thumb = await sharp(overlay)
+        const thumb = await sharp(await renderFramePreview(draft, overlay))
           .resize({ width: 360, withoutEnlargement: true })
           .flatten({ background: "#dcece7" })
           .webp({ quality: 82 })

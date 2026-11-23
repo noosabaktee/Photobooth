@@ -1,12 +1,15 @@
 import { beforeAll, it, expect, vi } from "vitest";
-import { readdir, mkdtemp, writeFile, rm } from "node:fs/promises";
+import { readdir, mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import ffmpeg from "ffmpeg-static";
 import sharp from "sharp";
-import { encodeBoomerang, validateVideo } from "@/lib/video-server";
+import { encodeBoomerang, validateVideo, stampVideo } from "@/lib/video-server";
+import jsQR from "jsqr";
+import { videoLayout } from "@/lib/video-design";
+import { starterStyles } from "@/lib/starter-artwork";
 const execute = promisify(execFile);
 let frames: Buffer[], video: Buffer;
 const temporaryFiles = async () =>
@@ -107,6 +110,86 @@ it("cleans temporary images after an unavailable encoder and reports configurati
     await expect(encodeBoomerang(frames)).rejects.toMatchObject({
       code: "VIDEO_NOT_CONFIGURED",
     });
+  } finally {
+    vi.unstubAllEnvs();
+  }
+  expect(await temporaryFiles()).toEqual(before);
+}, 60000);
+
+it.each(starterStyles)(
+  "%s MP4 has the exact folder QR throughout six seconds, with the original pose order",
+  async (style) => {
+    const url = "https://drive.google.com/drive/folders/test-only-video-folder";
+    const before = await temporaryFiles();
+    const final = await stampVideo(video, url, style);
+    await validateVideo(final, "video/mp4");
+    const directory = await mkdtemp(path.join(tmpdir(), "kmi-video-test-"));
+    try {
+      await writeFile(path.join(directory, "input.mp4"), final);
+      await execute(
+        ffmpeg!,
+        [
+          "-v",
+          "error",
+          "-i",
+          path.join(directory, "input.mp4"),
+          "-vf",
+          "select=not(mod(n\\,30))",
+          "-vsync",
+          "0",
+          "-frames:v",
+          "6",
+          path.join(directory, "pose-%02d.png"),
+        ],
+        { windowsHide: true, timeout: 30000 },
+      );
+      for (let i = 0; i < 6; i++) {
+        const frame = await readFile(
+          path.join(directory, `pose-${String(i + 1).padStart(2, "0")}.png`),
+        );
+        const { data, info } = await sharp(frame)
+          .extract({
+            left: 0,
+            top: videoLayout.footerTop,
+            width: 1080,
+            height: 1920 - videoLayout.footerTop,
+          })
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        expect(
+          jsQR(new Uint8ClampedArray(data), info.width, info.height)?.data,
+        ).toBe(url);
+        const color = [
+          ...(await sharp(frame)
+            .extract({ left: 540, top: 900, width: 1, height: 1 })
+            .removeAlpha()
+            .raw()
+            .toBuffer()),
+        ];
+        expect(color.indexOf(Math.max(...color))).toBe(i % 3);
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+    expect(await temporaryFiles()).toEqual(before);
+  },
+  90000,
+);
+
+it("video QR rejects unsafe destinations and cleans temp files on encoder failure", async () => {
+  await expect(
+    stampVideo(video, "https://evil.test/folder"),
+  ).rejects.toMatchObject({ code: "INVALID_DRIVE_LINK" });
+  const before = await temporaryFiles();
+  vi.stubEnv(
+    "FFMPEG_PATH",
+    path.join(tmpdir(), "missing-kmi-encoder", "ffmpeg"),
+  );
+  try {
+    await expect(
+      stampVideo(video, "https://drive.google.com/drive/folders/test-only"),
+    ).rejects.toMatchObject({ code: "VIDEO_NOT_CONFIGURED" });
   } finally {
     vi.unstubAllEnvs();
   }

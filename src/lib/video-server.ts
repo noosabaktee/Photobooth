@@ -6,6 +6,14 @@ import path from "node:path";
 import sharp from "sharp";
 import ffmpeg from "ffmpeg-static";
 import ffprobe from "ffprobe-static";
+import QRCode from "qrcode";
+import { driveFolderUrl } from "./urls";
+import {
+  starterBackdrop,
+  starterPalette,
+  type StarterStyle,
+} from "./starter-artwork";
+import { videoLayout } from "./video-design";
 import { fail } from "./errors";
 import {
   BOOMERANG_WIDTH,
@@ -66,6 +74,111 @@ async function run(binary: string, args: string[], cwd: string) {
 }
 const encoder = () => process.env.FFMPEG_PATH || ffmpeg || "ffmpeg";
 const probe = () => process.env.FFPROBE_PATH || ffprobe.path;
+
+// Called only after the uploaded input has passed validateVideo. The folder ID
+// already exists, but sharing waits until both finished media have been stored.
+export async function stampVideo(
+  bytes: Buffer,
+  folderUrl: string,
+  style: StarterStyle = "mint",
+) {
+  if (!driveFolderUrl(folderUrl))
+    fail(400, "INVALID_DRIVE_LINK", "Link folder tidak valid.");
+  if (!bytes.length || bytes.length > BOOMERANG_VIDEO_BYTES)
+    fail(413, "FILE_TOO_LARGE", "Video melebihi batas.");
+  const { width, height, footerTop, qrBox, qrX, qrY } = videoLayout;
+  const modules =
+    QRCode.create(folderUrl, { errorCorrectionLevel: "M" }).modules.size + 8;
+  const qrSize = modules * Math.floor(qrBox / modules);
+  if (!qrSize) fail(400, "INVALID_DRIVE_LINK", "Link folder terlalu panjang.");
+  const qr = await QRCode.toBuffer(folderUrl, {
+    type: "png",
+    width: qrSize,
+    margin: 4,
+    errorCorrectionLevel: "M",
+    color: {
+      dark: style === "film" ? "#ffffff" : "#000000",
+      light: "#00000000",
+    },
+  });
+  const ink = starterPalette[style].ink;
+  const label = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height - footerTop}"><g fill="${ink}" font-family="sans-serif"><text x="464" y="132" font-size="32" font-weight="bold">SCAN QR</text><text x="464" y="180" font-size="27">Kolase + video</text><text x="464" y="242" font-size="22">Hoya-Hoya Days</text><text x="464" y="280" font-size="18">Simpan kenanganmu</text></g></svg>`,
+  );
+  const footer = await sharp(Buffer.from(starterBackdrop(style, width, height)))
+    .extract({ left: 0, top: footerTop, width, height: height - footerTop })
+    .composite([
+      {
+        input: qr,
+        left: qrX + Math.floor((qrBox - qrSize) / 2),
+        top: qrY - footerTop + Math.floor((qrBox - qrSize) / 2),
+      },
+      { input: label, left: 0, top: 0 },
+    ])
+    .png()
+    .toBuffer();
+  return temporary(async (directory) => {
+    await writeFile(path.join(directory, "input.mp4"), bytes, { mode: 0o600 });
+    await writeFile(path.join(directory, "footer.png"), footer, {
+      mode: 0o600,
+    });
+    await run(
+      encoder(),
+      [
+        "-nostdin",
+        "-v",
+        "error",
+        "-threads",
+        "2",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-f",
+        "mov",
+        "-i",
+        "input.mp4",
+        "-i",
+        "footer.png",
+        "-filter_complex_threads",
+        "1",
+        "-filter_complex",
+        `[0:v][1:v]overlay=0:${footerTop}:format=auto[v]`,
+        "-map",
+        "[v]",
+        "-an",
+        "-map_metadata",
+        "-1",
+        "-t",
+        "6",
+        "-frames:v",
+        "180",
+        "-r",
+        "30",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "18",
+        "-profile:v",
+        "high",
+        "-level:v",
+        "4.1",
+        "-pix_fmt",
+        "yuv420p",
+        "-threads",
+        "2",
+        "-movflags",
+        "+faststart",
+        "final.mp4",
+      ],
+      directory,
+    );
+    const output = await readFile(path.join(directory, "final.mp4"));
+    if (output.length > BOOMERANG_VIDEO_BYTES)
+      fail(413, "FILE_TOO_LARGE", "Video final melebihi 16 MiB.");
+    return output;
+  });
+}
 
 export async function encodeBoomerang(frames: Buffer[]) {
   const order = slideshowOrder(frames.length);

@@ -31,13 +31,14 @@ export function Privacy() {
   return (
     <div className="privacy-note">
       <strong>Momenmu, pilihanmu.</strong> Foto asli berada di memori browser.
-      Download PNG lokal tersedia tanpa upload. Saat membuat preview/download
-      MP4 atau menyimpan hasil, foto yang sudah diedit dikirim ke server untuk
-      pemrosesan video sementara, lalu file sementara dihapus setelah proses
-      selesai/gagal. Jika kamu memilih simpan ke Drive pengelola, kolase PNG dan
-      video MP4 masuk ke satu folder hasil yang dapat dibuka siapa saja yang
-      punya link dan tetap tersimpan setelah tab ditutup. QR dan foto di halaman
-      ini hilang saat refresh. Hubungi pengelola acara untuk penghapusan.
+      Saat kamu membuka kamera dan memulai countdown, layanan ini memproses foto
+      sementara di server dan otomatis menyimpan kolase PNG + video MP4 ke Drive
+      setelah foto terakhir. File sementara dihapus setelah proses
+      selesai/gagal. Folder hasil dapat dibuka siapa saja yang punya link; QR
+      yang sama juga dicetak pada PNG. Hasil di layar dihapus otomatis setelah
+      durasi scan yang diatur pengelola (default 15 detik), atau saat refresh.
+      File Drive tetap tersimpan. Hubungi pengelola acara untuk penghapusan.
+      Mode demo tidak menyimpan hasil ke Drive dan tidak membuat QR palsu.
     </div>
   );
 }

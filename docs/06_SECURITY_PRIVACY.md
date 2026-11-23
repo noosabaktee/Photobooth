@@ -4,26 +4,28 @@ Revisi boomerang: hasil kini PNG + MP4 dalam satu folder sesi. [13_BOOMERANG.md]
 
 ## 1. Data handling matrix
 
-| Data                              | Diproses di                      | Persisted?                            | Audience                                  |
-| --------------------------------- | -------------------------------- | ------------------------------------- | ----------------------------------------- |
-| Raw individual captures           | Browser memory                   | Tidak (default)                       | Guest yang mengambil                      |
-| Photo strip final sebelum upload  | Browser memory                   | Tidak sampai user mengizinkan upload  | Guest                                     |
-| Kolase + video setelah upload     | Google Drive `photos/<session>/` | **Ya** sampai folder dihapus operator | Siapa pun yang punya link folder          |
-| Pose edit untuk encode MP4        | Browser → OS temp server privat  | Sementara sampai proses selesai/gagal | Proses encoder                            |
-| MP4 sebelum simpan Drive          | Browser memory                   | Tidak setelah refresh                 | Guest                                     |
-| Frame PNG, thumbnail, config JSON | Google Drive `frames/`           | Ya                                    | Admin; published asset via proxy ke guest |
-| QR                                | Browser memory                   | Tidak                                 | Guest saat tab masih aktif                |
-| Admin password hash               | Server environment               | Ya di hosting secret                  | Operator/backend                          |
-| Admin session cookie              | Browser cookie, signed HttpOnly  | Sementara sampai expired              | Admin browser                             |
-| OAuth refresh token               | Server environment               | Ya di hosting secret                  | Backend saja                              |
+| Data                              | Diproses di                           | Persisted?                             | Audience                                  |
+| --------------------------------- | ------------------------------------- | -------------------------------------- | ----------------------------------------- |
+| Raw individual captures           | Browser memory                        | Tidak (default)                        | Guest yang mengambil                      |
+| Photo strip final sebelum upload  | Browser memory                        | Sementara sebelum upload otomatis      | Guest                                     |
+| Kolase + video setelah upload     | Google Drive `photos/<session>/`      | **Ya** sampai folder dihapus operator  | Siapa pun yang punya link folder          |
+| Pose edit untuk encode MP4        | Browser → OS temp server privat       | Sementara sampai proses selesai/gagal  | Proses encoder                            |
+| MP4 sebelum simpan Drive          | Browser memory                        | Tidak setelah refresh                  | Guest                                     |
+| Frame PNG, thumbnail, config JSON | Google Drive `frames/`                | Ya                                     | Admin; published asset via proxy ke guest |
+| QR layar / PNG / MP4              | Browser memory / PNG dan MP4 di Drive | Layar tidak; PNG/MP4 ya sampai dihapus | Guest / siapa pun yang punya link         |
+| Admin password hash               | Server environment                    | Ya di hosting secret                   | Operator/backend                          |
+| Admin session cookie              | Browser cookie, signed HttpOnly       | Sementara sampai expired               | Admin browser                             |
+| OAuth refresh token               | Server environment                    | Ya di hosting secret                   | Backend saja                              |
 
 **Ketepatan istilah:** Foto **bukan** hilang dari Drive saat QR/tab ditutup. Link yang telah dibagikan tetap bisa diakses selama izin file publik masih aktif. Jika operator ingin private-only, arsitektur QR langsung Drive harus diubah ke download proxy dengan token dan expiry; itu **bukan scope MVP**.
 
 ## 2. Privacy notice UI (copy yang disarankan)
 
-> Saat membuat preview/download MP4, pose yang sudah diedit diproses sementara di server lalu dihapus. Dengan memilih "Simpan ke Drive & buat QR", kamu mengizinkan kolase PNG dan video MP4 disimpan ke folder sesi di Google Drive pengelola. Keduanya dapat dibuka siapa saja yang memiliki tautan folder. Hasil tidak otomatis terhapus saat halaman ditutup. Simpan atau pindai QR sebelum keluar; hubungi pengelola acara untuk penghapusan.
+> Saat kamu membuka kamera dan memulai countdown, foto diproses sementara di server dan kolase PNG + video MP4 otomatis disimpan setelah foto terakhir. Folder Drive dapat dibuka siapa saja yang memiliki tautannya. QR yang sama tercetak pada frame PNG. Hasil browser dihapus otomatis setelah durasi scan (default 15 detik); file Drive tetap ada sampai pengelola menghapus atau mencabut izin. Hubungi pengelola acara untuk penghapusan.
 
-Opsional: operator menambahkan email kontak privacy & kebijakan retensi, tetapi jangan mengisi alamat palsu. Foto dengan anak/remaja perlu consent yang sesuai. Jika event berlangsung publik, tampilkan pemberitahuan yang terlihat dan desain alur yang tidak memaksa upload (user tetap bisa download lokal).
+Revisi terbaru sesuai permintaan operator menghapus checkbox konfirmasi dan langsung mengaktifkan Buka kamera. Izin kamera browser tetap wajib; informasi proses otomatis, folder publik dan retensi tersedia melalui Privasi di footer. Memulai sesi adalah tindakan pengguna, tetapi flag API `consent`/`processingConsent` lama bukan rekaman persetujuan legal atau bukti checkbox. Tidak ada log/history persetujuan baru. Download lokal tetap tersedia sesudah proses atau saat upload gagal. Mock tidak mengunggah media ke Drive. Operator dapat menambahkan kontak privasi/retensi yang benar; jangan mengisi kontak palsu.
+
+`photoDataUrl` dan `videoDataUrl` respons berisi byte PNG/MP4 final yang sama dengan Drive, total maksimal sekitar 38 MiB base64; tidak boleh dicatat pada log, analytics atau cache. Stamping QR MP4 memakai folder riil, file temp privat, encoder tanpa shell, batas 16 MiB dan cleanup pada sukses/gagal. Preview frame memakai ilustrasi dummy serta penanda AREA QR non-scannable; endpoint unsaved preview dilindungi auth/origin/ukuran/throttle dan tidak menyimpan draft. Konfigurasi durasi merupakan file JSON privat dalam frames, tidak boleh ikut public proxy aset. API admin settings memiliki auth/origin/throttle/revision check; public GET hanya mengembalikan integer durasi. Reset timer membersihkan Blob URL/state; tidak mencabut izin Drive atau QR cetak. Tidak menjanjikan penghapusan file publik ketika timer habis.
 
 ## 3. Admin authentication tanpa DB
 

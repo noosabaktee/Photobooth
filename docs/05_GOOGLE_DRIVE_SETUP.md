@@ -57,12 +57,12 @@ Jalankan `npm run admin:hash` dan masukkan password minimal 6 karakter. Hash dan
 
 1. Impor tiga frame event dengan `npm run drive:seed`, atau di admin upload PNG overlay test, buat slot sesuai desain lalu publish.
 2. Buka public page di incognito, lihat frame test.
-3. Jalankan tiga capture kamera → kolase PNG dan preview video MP4.
-4. Klik upload consent dan tunggu sukses, simpan hasil test di Drive.
+3. Klik Buka kamera langsung tanpa checkbox, izinkan kamera browser, lalu jalankan tiga capture → kolase natural + MP4 otomatis diproses dan disimpan. Informasi proses/retensi ada di Privasi footer.
+4. Tunggu QR, periksa countdown reset (default 15 detik, dapat diatur admin) dan simpan hasil uji sebelum waktunya habis.
 5. Pastikan satu folder sesi di `photos/` berisi tepat `kolase.png` + `boomerang.mp4`; foto mentah tidak disimpan di Drive. Folder sesi saja yang publik, folder induk dan frame tetap privat.
 6. Scan QR dengan HP akun Google yang **berbeda** atau tanpa login / incognito.
 7. Pastikan QR membuka folder dan kedua hasil dapat dibuka/diunduh; putar MP4 setelah preview Drive selesai diproses. Jika Workspace memblokir sharing folder, tampilkan error tanpa QR.
-8. Refresh halaman photobooth; QR/video lokal hilang, hasil tetap di Drive. Tidak perlu bootstrap atau seed ulang folder yang sudah dikonfigurasi untuk fitur ini.
+8. Scan juga QR pada PNG yang diunduh/dicetak: harus membuka folder yang sama. Background area QR menyatu dengan footer frame; tiga foto tetap utuh. Tunggu reset timer: QR/video lokal hilang, hasil tetap di Drive. Sesi berikutnya langsung dapat membuka kamera tanpa checkbox. Ubah durasi admin, refresh admin dan mulai sesi baru untuk memeriksa persistensi. Tidak perlu bootstrap ulang. Untuk memperbarui galeri seed dengan panel hijau lama, jalankan `npm run drive:seed` satu kali; seed bertag di-upgrade ke artwork tema badan frame tanpa mengganti ID atau menyentuh foto hasil sesi.
 9. Unpublish frame; tidak tampil pada request gallery berikutnya (implementasi saat ini menggunakan `no-store`).
 10. Hapus hasil test secara manual dari Drive untuk menghemat storage.
 

@@ -1,6 +1,12 @@
 # 03 — Frame template schema & renderer specification
 
+Preview pilih frame, kartu admin dan preview builder kini menampilkan proporsi/desain hasil lengkap, termasuk penanda non-scannable AREA QR. Tidak ada link/QR palsu sebelum folder sesi tersedia. PNG hasil, video MP4 dan QR layar memakai URL folder yang sama; MP4 mengikuti tema frame dan QR tampil sepanjang enam detik. Preview/download MP4 menggunakan byte final yang sama dengan Drive. Tema custom tanpa identitas seed memakai kartu video mint sebagai default.
+
+Seluruh bagian bawah hasil cetak mengikuti tema badan frame: Vintage hitam dengan perforasi film, Gingham kotak-kotak pink dan Mint mint. Tidak ada panel hijau bersama atau kartu QR terpisah. Artwork diteruskan di belakang QR; modul putih pada Vintage dan hitam pada tema terang. Margin kosong QR tetap empat modul, dengan pola pastel berkontras rendah pada Gingham. Uji scan HP/printer sebelum acara. Renderer juga mengganti panel hijau pada hasil sesi baru yang memakai overlay seed lama; PNG hasil lama di Drive tidak diubah. Jalankan `npm run drive:seed` sekali setelah deploy untuk upgrade aset/thumbnail seed pada galeri Drive ke artwork versi baru.
+
 ## 1. Core idea
+
+Revisi cetak 23 November 2026: definisi slot/dimensi overlay tetap sama. Setelah kolase selesai dan folder sesi dibuat, area QR melanjutkan warna dan sisi footer frame. Snapshot `printLayout` memuat dimensi dan batas pixel bawah semua slot; server memeriksa schema dan kecocokan dimensi gambar. Pita datar dicari hanya di bawah slot, lalu diperpanjang dan ujung bawah asli dipindahkan ke bawah QR. Pada tiga seed, renderer memakai artwork tema untuk mengganti seluruh area di bawah slot, termasuk panel hijau lama, dengan background/border sesuai badan frame. Jika footer tidak tersedia/pita tidak cocok atau snapshot tidak dikirim, area QR melanjutkan tepi bawah kolase. Semua foto tetap utuh di posisi semula; QR mempertahankan margin empat modul; pada Gingham pola pastel halus diteruskan tanpa kartu pembungkus. Dimensi PNG final bertambah tinggi; PNG kembali divalidasi terhadap batas gambar. Footer tidak menjadi slot atau aset overlay admin, sehingga template lama tetap kompatibel. QR/link hanya muncul pada hasil penyimpanan Drive yang sukses; mock tidak membuat QR palsu.
 
 Admin brings an original **transparent PNG overlay** containing decorative borders and transparent photo holes. Photos are drawn in designated areas behind the overlay. Each frame can have 1–6 slots (vertical stack or grid). A JSON config contains slot positions; no database needed.
 

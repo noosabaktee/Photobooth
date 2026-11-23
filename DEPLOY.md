@@ -75,7 +75,7 @@ Isi `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, dan seluruh credential/folder
 - Hash Argon2id di file `.env*` harus menggunakan `\$` untuk setiap tanda `$`. Script `admin:hash` menangani escaping tersebut otomatis.
 - Jangan jalankan `source .env.local`. Next.js memuat file ini dari folder proyek.
 - Untuk membuat password admin baru, jalankan `npm run admin:hash` setelah dependency terpasang. Minimal enam karakter; script menyimpan konfigurasi langsung. Login menggunakan password asli, bukan hash. Lewati jika mempertahankan password yang sudah ada.
-- Untuk konfigurasi Drive baru, ikuti [setup Google Drive](docs/05_GOOGLE_DRIVE_SETUP.md). Jangan bootstrap/seed ulang jika ingin memakai folder dan frame yang sudah tersedia.
+- Untuk konfigurasi Drive baru, ikuti [setup Google Drive](docs/05_GOOGLE_DRIVE_SETUP.md). Tidak perlu bootstrap ulang folder yang sudah tersedia. Pengecualian upgrade artwork seed lama dijelaskan pada smoke test di bawah.
 - Callback `http://localhost:3847/oauth2callback` adalah callback script setup OAuth, bukan port website. Tidak perlu diubah hanya karena aplikasi memakai port 3005. Untuk OAuth di server headless, ikuti panduan setup; `localhost` pada browser operator tidak otomatis mengarah ke server remote.
 - Jika credential pernah dibagikan, rotasi secret dan lakukan otorisasi ulang sebelum penggunaan publik.
 
@@ -230,9 +230,13 @@ https://booth.todays.id/admin/login
 ```
 
 - Login admin dan periksa koleksi frame.
-- Izinkan kamera, ambil tiga foto, lakukan retake, dan periksa kolase serta preview/download MP4.
-- Berikan consent, upload hasil, dan pindai QR dari HP tanpa login Google.
-- Pastikan QR membuka folder sesi berisi tepat `kolase.png` dan `boomerang.mp4`. Folder utama dan frame tetap privat.
+- Di admin, atur **Durasi scan QR (detik)** (default 15, rentang 5–300), simpan lalu refresh admin untuk memastikan nilai bertahan. Mode Drive menyimpan `frames/kiosk-settings.json` privat.
+- Klik Buka kamera langsung tanpa checkbox, izinkan kamera browser, ambil tiga foto, lalu pastikan upload otomatis menghasilkan PNG + MP4 tanpa panel nuansa/review. Informasi privasi tetap tersedia di footer.
+- Pindai QR dari HP tanpa login Google, unduh PNG dan pastikan seluruh bagian bawah mengikuti badan frame: Vintage hitam dengan perforasi, Gingham kotak pink, Mint mint; tidak ada panel hijau bersama. Tiga foto tetap utuh dan QR cetak dapat dipindai. Jangan crop QR; sesuaikan kertas dengan tinggi PNG baru. Aplikasi tidak mencetak otomatis.
+- Untuk galeri Drive yang masih memakai seed dengan panel hijau lama, jalankan `npm run drive:seed` satu kali setelah kode terbaru dipasang. Seed bertag yang belum memiliki `artwork:continuous-v2` di-upgrade dengan ID/revision/aset versi lama dipertahankan. Script menulis aset frame riil, tidak menyentuh foto hasil sesi. Renderer hasil baru juga memperbaiki footer overlay lama berdasarkan identitas preset. Refresh galeri setelah upgrade.
+- Setelah durasi scan habis, layar wajib kembali ke pilih frame; sesi berikutnya langsung dapat membuka kamera tanpa checkbox. File hasil di Drive tetap dapat dibuka. Error upload tidak boleh memulai reset; periksa retry/download fallback.
+- Pastikan QR pada PNG dan frame MP4 membuka folder sesi yang sama, berisi tepat `kolase.png` dan `boomerang.mp4`. Putar/unduh video: tema sesuai frame, QR tetap ada sepanjang enam detik dan tidak menutup pose. Preview galeri/admin harus serupa hasil lengkap dengan penanda AREA QR sebelum sesi. Folder utama dan frame tetap privat.
+- Respons hasil mengandung PNG + MP4 final base64 dan dapat sekitar 38 MiB; jangan cache atau log body respons di aplikasi/proxy. Batas request upload tetap 32 MiB di proxy; sesuaikan timeout untuk validasi, stamping video dan Drive.
 - Refresh halaman: foto/QR lokal hilang, file yang telah diunggah tetap ada di Drive.
 - Pastikan service aktif setelah restart server pada waktu pengujian yang disepakati.
 

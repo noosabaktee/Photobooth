@@ -34,14 +34,19 @@ export async function installCamera(page: Page) {
   });
 }
 
-export async function takePhotos(page: Page, retake = false) {
+export async function takePhotos(page: Page) {
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Buka kamera" })).toBeEnabled();
   await page.getByRole("button", { name: "Buka kamera" }).click();
   await page
     .getByRole("button", {
-      name: retake ? "Ambil ulang foto" : "Mulai countdown",
+      name: "Mulai countdown",
       exact: true,
     })
     .click();
-  await expect(page.getByLabel("Preview hasil photo strip")).toBeVisible();
+  // Short landscape prioritizes the large QR and intentionally hides the strip.
+  await expect(page.locator(".result-card > h2")).toBeVisible({
+    timeout: 60000,
+  });
 }

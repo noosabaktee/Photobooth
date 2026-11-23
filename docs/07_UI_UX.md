@@ -1,5 +1,11 @@
 # 07 — Visual direction, screens, interactions
 
+Preview selama encode/upload, ketika upload gagal, serta hasil demo memakai desain cetak lengkap dengan penanda AREA QR non-scannable. Panel hijau lama pada seed diganti sebelum preview ditampilkan. Komposisi mentah untuk request/retry disimpan terpisah dalam memori; hasil Drive menggantikan preview dengan PNG final ber-QR setelah penyimpanan berhasil. Tidak ada request tambahan hanya untuk preview.
+
+Preview pilih frame, kartu admin dan preview builder kini menampilkan proporsi/desain hasil lengkap, termasuk penanda non-scannable AREA QR. Tidak ada link/QR palsu sebelum folder sesi tersedia. PNG hasil, video MP4 dan QR layar memakai URL folder yang sama; MP4 mengikuti tema frame dan QR tampil sepanjang enam detik. Preview/download MP4 menggunakan byte final yang sama dengan Drive. Tema custom tanpa identitas seed memakai kartu video mint sebagai default.
+
+Seluruh bagian bawah hasil cetak mengikuti tema badan frame: Vintage hitam dengan perforasi film, Gingham kotak-kotak pink dan Mint mint. Tidak ada panel hijau bersama atau kartu QR terpisah. Artwork diteruskan di belakang QR; modul putih pada Vintage dan hitam pada tema terang. Margin kosong QR tetap empat modul, dengan pola pastel berkontras rendah pada Gingham. Uji scan HP/printer sebelum acara. Renderer juga mengganti panel hijau pada hasil sesi baru yang memakai overlay seed lama; PNG hasil lama di Drive tidak diubah. Jalankan `npm run drive:seed` sekali setelah deploy untuk upgrade aset/thumbnail seed pada galeri Drive ke artwork versi baru.
+
 ## 1. Moodboard dari gambar user
 
 Lihat file di `../references/` (copyright/privasi milik pemilik sumber; hanya inspirasi):
@@ -35,17 +41,17 @@ Fonts: gunakan font web yang bebas digunakan dan fallbacks, mis. `DM Sans` / `Pl
 
 ## 4. Booth (`/booth`)
 
-UI step header dengan indikator `1 Pilih frame | 2 Ambil foto | 3 Cek & simpan | 4 Ambil hasil`.
+UI step header dengan indikator `1 Pilih frame | 2 Ambil foto | 3 Simpan otomatis | 4 Scan QR`.
 
 **Frame step:** grid cards portrait/strip thumbnail 3 columns desktop, 2 mobile. Preview overlay on dummy photos, badge jumlah foto, kategori, button Select.
 
 **Capture step:** large live camera 4:3 atau portrait preview; countdown angka sederhana; shot progress; primary Shutter; secondary Switch camera, Stop, Mirror. Auto capture sesuai template slots. Perfoto thumbnail strip progress.
 
-**Review step:** preview strip di kiri, foto thumbnail/retake control dan filter di kanan (stack pada mobile), CTA Save/Upload, local download available. Preview dan export harus identik secara crop/overlay.
+**Mulai langsung:** Buka kamera aktif setelah frame siap, tanpa checkbox konfirmasi. Browser tetap meminta izin kamera. Informasi pemrosesan sementara, upload otomatis, folder publik dan persistensi Drive tersedia melalui Privasi di footer.
 
-**Upload step:** spinner/progress real, don't prematurely present QR, retry with local file kept.
+**Upload step:** langsung sesudah foto terakhir tanpa review/pilihan nuansa. Semua foto natural. Spinner/status nyata, jangan tampilkan QR sebelum PNG + MP4 lengkap dan sharing terverifikasi. Jika gagal, simpan media lokal dan beri retry/download; timer tidak berjalan.
 
-**Result step:** image strip preview, QR 192–256px high contrast, short instruction "Scan pakai kamera HP", Copy Link, Open in Drive, Download Local, New Session. State nullified on refresh.
+**Result step:** preview PNG identik dengan file Drive, QR 192–256px kontras, instruksi scan dan penghitung waktu. Area QR cetak menyatu dengan warna/sisi footer frame: tema badan frame diteruskan tanpa menutup/menggeser foto. Area tenang QR tetap polos kontras. Sesudah QR dimuat, timer default 15 detik → bersihkan sesi → pilih frame. Admin mengatur 5–300 detik untuk sesi baru. Link/PNG/MP4 dan Foto lagi tersedia; state tetap hilang saat refresh. File Drive tidak dihapus oleh reset.
 
 ## 5. Admin screens
 
@@ -81,6 +87,6 @@ Minimal dashboard profesional, beda tone guest tapi tetap satu brand:
 - Halaman publik tetap satu layar `100dvh`, dengan kartu frame yang dapat diketuk langsung dan satu tindakan utama pada tiap tahap. Petunjuk menjelaskan izin kamera, berpose, retake, simpan dan scan QR dalam bahasa Indonesia.
 - Hero memakai strip ilustrasi yang melayang pelan, ornamen berputar, dan sorotan lembut pada tombol mulai. Kartu frame merespons hover/fokus; perpindahan tahap memakai transisi singkat.
 - Countdown hanya menampilkan angka 3–2–1 berukuran responsif 40–64px, tanpa lingkaran, teks pose atau tint yang menutupi kamera. Setelah angka hilang, tunggu 500 ms sebelum dijepret; jeda juga berlaku pada retake dan reduced motion. Posisi jepretan tetap di toolbar/thumbnail. Thumbnail yang selesai memiliki tanda centang. Animasi tidak mengubah pixel hasil PNG/MP4.
-- Setelah hasil selesai, konfeti dekoratif muncul sekali. Tombol **Foto lagi** membuka konfirmasi **Sudah menyimpan hasilmu?**; **Kembali ke hasil** mempertahankan sesi, **Ya, mulai sesi baru** membersihkan foto/video/QR di browser. File yang sudah di Drive tetap tersimpan. Tidak ada reset otomatis yang menghapus hasil sebelum diambil.
+- Setelah hasil selesai, konfeti dekoratif muncul sekali. Tombol **Foto lagi** membuka konfirmasi **Sudah menyimpan hasilmu?**; **Kembali ke hasil** mempertahankan sesi hingga timer habis, **Ya, mulai sesi baru** mempercepat reset. Timer tetap berjalan saat dialog terbuka atau tab tersembunyi, berdasarkan deadline waktu absolut. File Drive tetap tersimpan.
 - Footer menyediakan **Cara pakai** dalam dialog dengan tiga langkah serta kontrol animasi. Dialog bisa ditutup dengan Escape dan mengembalikan fokus ke pemicu. Kontrol animasi disimpan di memori halaman saja; `prefers-reduced-motion` selalu dihormati, termasuk perubahan pengaturan ketika halaman terbuka.
 - Animasi non-esensial bisa dimatikan tanpa menghambat kamera, editing, download atau QR. Tidak ada suara otomatis, kedipan flash atau dependensi animasi tambahan. Dialog bantuan/privasi dapat menggulir di layar pendek; halaman utama tetap tidak bergulir.

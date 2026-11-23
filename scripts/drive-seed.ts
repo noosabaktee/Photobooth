@@ -16,21 +16,24 @@ const repo = new FrameRepository(new GoogleDriveBackend());
 const existing = await repo.list(true);
 for (const seed of manifest.frames) {
   const tag = `seed:${seed.id}`;
+  const artworkTag = "artwork:continuous-v2";
   let current = existing.find((f) => f.tags.includes(tag));
-  if (current) {
+  if (current?.tags.includes(artworkTag)) {
     console.log(`Lewati ${seed.name}: sudah diimport.`);
   } else {
     const overlay = await readFile(
       path.join(process.cwd(), "examples/starter-frames", seed.overlayPath),
     );
     const saved = await repo.save(
-      draftSchema.parse({ ...seed, tags: [tag] }),
+      draftSchema.parse({ ...seed, tags: [tag, artworkTag] }),
       overlay,
+      current?.id,
+      current?.revision,
     );
     await repo.status(saved.id, "published", saved.revision);
     current = await repo.get(saved.id, true);
     console.log(
-      `Imported ${seed.name}: PNG + thumbnail WebP + JSON privat, published via proxy.`,
+      `Saved ${seed.name}: continuous theme PNG + thumbnail WebP + JSON privat, published via proxy.`,
     );
   }
   if (current.status !== "published")

@@ -1,5 +1,7 @@
 # Video MP4 dan folder hasil sesi
 
+Revisi terbaru: video mengikuti tema pilihan (Vintage hitam, Gingham pink, Mint mint) dan menyediakan footer QR di luar area pose 3:4. Server memasang QR folder riil setelah folder dibuat, sebelum MP4 diunggah dan sharing diverifikasi. QR tetap tampil sepanjang enam detik dan sama dengan PNG/layar. `videoDataUrl` mengembalikan MP4 final yang sama persis untuk preview/download; mode mock dan fallback sebelum upload tidak mempunyai QR folder. Respons PNG + MP4 dapat sekitar 38 MiB base64; tidak boleh dicatat atau di-cache. File sementara stamping dibersihkan pada sukses/gagal.
+
 Revisi fitur ini menggantikan spesifikasi awal yang menyimpan satu PNG dengan QR per-file. Tidak ada database atau riwayat pengguna yang ditambahkan.
 
 ## Hasil dan alur
@@ -7,9 +9,10 @@ Revisi fitur ini menggantikan spesifikasi awal yang menyimpan satu PNG dengan QR
 - Kolase PNG tetap mengikuti frame pilihan pada resolusi asli dan renderer preview yang sama.
 - Video MP4 menampilkan satu pose bergantian pada kartu event vertikal orisinal. Tiga foto memakai urutan `1 → 2 → 3 → 1 → 2 → 3`, satu detik per foto, total enam detik. Video berjalan maju dan mengulang tanpa efek boomerang. Tidak ada interpolasi gerak; hasil berupa pergantian foto, bukan rekaman kamera bergerak.
 - Output video: 1080 × 1920 (9:16), H.264 high, yuv420p, 30 fps, tanpa audio, faststart. Bingkai video memakai nama event/perusahaan dan area foto cover 3:4; overlay strip PNG tidak diregangkan menjadi video.
-- Filter, mirror dan posisi crop tiap pose konsisten dengan pengaturan review. Retake/filter/mirror membatalkan cache MP4; perlu membuat video baru setelah perubahan. Layout custom 1–6 slot tetap didukung.
-- Preview MP4 memakai kontrol play/pause dan loop; tidak autoplay. Download PNG tidak memerlukan server. Preview/download MP4 memerlukan encoder server dan memproses pose edit sementara; ini dijelaskan di UI sebelum tombol video.
-- Persetujuan Drive mencakup PNG dan MP4 dalam folder publik per sesi. Tombol simpan membuat video bila belum tersedia, lalu mengunggah kedua hasil bersama. Error mempertahankan salinan lokal dan tidak menghasilkan QR palsu.
+- Alur antrean terbaru memakai warna natural; mirror dan crop mengikuti pengambilan kamera/frame. Panel review, retake dan pilihan filter dihilangkan dari guest. Layout custom 1–6 slot tetap didukung.
+- Preview MP4 di hasil memakai kontrol play/pause dan loop; tidak autoplay. Buka kamera langsung aktif tanpa checkbox konfirmasi; informasi proses otomatis/folder publik tersedia di Privasi footer, izin kamera tetap melalui browser. Sesudah capture, encoder sementara memproses video otomatis. Area QR cetak menyatu dengan warna/sisi footer frame; tiga foto tetap utuh. Preview/download PNG final memerlukan proses simpan berhasil. PNG dasar tanpa QR tetap bisa diunduh jika gagal.
+- Hasil PNG dan MP4 disimpan dalam folder publik per sesi. Sesudah foto terakhir, kedua file langsung diproses dan dikirim. Error mempertahankan salinan lokal serta menyediakan retry tanpa QR palsu; retry memakai MP4 yang sudah berhasil dibuat.
+- QR pada PNG dan layar mengarah ke folder yang sama. Default 15 detik setelah QR tampil, browser kembali ke pilih frame dan membersihkan state. Durasi 5–300 detik dapat diatur admin melalui JSON privat; tidak mengubah durasi video enam detik atau menghapus hasil Drive.
 
 ```text
 PHOTOBOOTH_ROOT/                  private
@@ -20,7 +23,7 @@ PHOTOBOOTH_ROOT/                  private
       boomerang.mp4
 ```
 
-Server menunggu dua file lengkap sebelum membagikan folder sesi, lalu memeriksa ACL folder dan akses yang diwarisi kedua file. QR berasal dari `webViewLink` folder yang benar-benar dikembalikan Drive dengan ID yang sama. Workspace yang melarang folder publik menghasilkan error tanpa QR. Folder utama tidak dibagikan. Jangan menambahkan file sensitif lain ke folder sesi karena folder tersebut publik bagi pemilik link.
+Server membuat folder privat dan QR URL kanonis memakai ID folder dari Drive, menambahkan footer QR tanpa menimpa area kolase, lalu menunggu dua file lengkap sebelum sharing. `webViewLink` dan ACL folder/anak wajib diverifikasi sesuai ID sebelum response dikirim. PNG final yang sama dikembalikan sebagai `photoDataUrl` (JSON base64 maksimal sekitar 16 MiB). Workspace yang melarang folder publik menghasilkan error tanpa QR. Folder utama tidak dibagikan. Jangan menambahkan file sensitif lain ke folder sesi karena folder tersebut publik bagi pemilik link.
 
 ## Pemrosesan dan batas
 
@@ -61,7 +64,7 @@ Retensi tetap manual. Hapus/revoke sharing folder sesi untuk mengakhiri akses ke
 
 Tes otomatis memeriksa urutan maju berulang dan durasi satu detik setiap foto dari seluruh 180 frame video yang benar-benar didecode, format/dimensi/durasi/fps/audio, penolakan input palsu/rusak/terlalu besar, cleanup, consent/origin, kegagalan file kedua/ACL/link, dan folder dengan tepat dua file melalui adapter test.
 
-Playwright memakai kamera sintetis untuk preview/download MP4, upload PNG + MP4, mode demo, retake/filter dan refresh. Fixture QR hanya dipakai dalam tes layout dan tidak membuktikan sharing Drive riil.
+Playwright memakai kamera sintetis untuk akses kamera langsung tanpa checkbox, upload otomatis PNG + MP4, preview/download, mode demo, kegagalan/retry, timer default/khusus dan refresh. Fixture QR dipakai untuk tes layout, decode PNG unduhan dan timer; tidak membuktikan sharing Drive riil.
 
 Smoke produksi oleh operator: simpan satu sesi disposable, pastikan folder berisi PNG + MP4 saja, buka QR di perangkat/incognito tanpa akun Google, putar/download MP4, periksa root/frames/photos tetap privat, lalu hapus folder uji bila tidak diperlukan. Google Drive dapat memerlukan waktu memproses preview MP4 setelah upload; file MP4 tetap dapat di-download dari folder.
 

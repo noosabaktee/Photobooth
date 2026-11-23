@@ -117,12 +117,12 @@ export function Landing({ view }: { view: "home" | "how" | "frames" }) {
                   {
                     icon: Camera,
                     title: "Pose. Ketawa. Jepret.",
-                    text: "Ikuti hitungan mundur. Kurang pas? Ulangi foto sesukamu.",
+                    text: "Buka kamera, lalu ikuti hitungan untuk tiga jepretan.",
                   },
                   {
                     icon: ScanLine,
                     title: "Bawa pulang momennya",
-                    text: "Download langsung, atau simpan ke Drive dan scan QR di HP.",
+                    text: "Hasil otomatis disimpan. Scan QR di HP sebelum layar berganti.",
                   },
                 ].map((item, i) => (
                   <div className="how-card" key={item.title}>

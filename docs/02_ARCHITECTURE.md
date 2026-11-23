@@ -1,6 +1,10 @@
 # 02 — Technical Architecture (no database)
 
+Preview galeri/admin/builder memakai `renderFramePreview` dan renderer cetak bersama, dengan placeholder AREA QR. Builder unsaved POST ke `/api/admin/preview` yang dilindungi admin. Setelah folder riil dibuat, server menambahkan QR ke MP4 (`stampVideo`) dan PNG sebelum upload/sharing. Respons berisi `photoDataUrl` + `videoDataUrl` dengan byte final yang identik dengan Drive, disimpan hanya di memori browser. Tidak ada sesi media server baru atau URL download sementara.
+
 ## 1. Komponen
+
+Revisi antrean 23 November 2026: Buka kamera langsung aktif tanpa checkbox; informasi privasi tersedia di footer dan izin kamera browser tetap berlaku. Browser otomatis membuat/mengirim kolase natural + MP4 sesudah capture. Snapshot `printLayout` membatasi area perubahan di bawah semua slot. Untuk tiga seed, enum `starterStyle` meneruskan background/border badan frame dan mengganti panel hijau lama; artwork yang sama dipakai saat membangun aset seed. Untuk template custom tanpa style, server mencari pita datar di bawah slot dan melanjutkan warna/sisinya untuk QR dan memindahkan ujung bawah asli ke bawahnya; tanpa pita yang sesuai, area QR melanjutkan tepi bawah. Foto tidak ditutup/digeser. Byte PNG final yang diunggah dikembalikan sebagai `photoDataUrl` agar preview/download identik. Timer default 15 detik baru berjalan setelah QR dimuat, kemudian membersihkan sesi browser. Admin mengatur 5–300 detik melalui JSON privat `frames/kiosk-settings.json`; API publik hanya mengekspos durasi. Tidak ada database/history baru. Mock tidak menyimpan media atau membuat QR Drive palsu.
 
 ```mermaid
 flowchart TD
@@ -27,7 +31,7 @@ flowchart TD
 | --------------------------------------- | ---------------------------------------- | --------------------------------- |
 | Camera + countdown + photos in memory   | Auth admin & cookies                     | Frame overlay assets & thumbnails |
 | Frame preview + photo strip composition | Validate request/schema/MIME/size        | One JSON config per frame         |
-| Retake & filters                        | Files list/read/upload/update/delete     | Final photo strip image           |
+| Upload otomatis + timer reset           | Files list/read/upload/update/delete     | PNG cetak + MP4 per sesi          |
 | QR generation from returned URL         | Permissions share/read verification      | Ownership, capacity & ACL         |
 | User notices & error UX                 | Sanitized errors + best-effort throttles | View/download URL                 |
 
@@ -48,15 +52,15 @@ flowchart TD
 ### Public photo write
 
 1. Render full PNG locally. PNG download does not send any photo to the server.
-2. On preview/download video or Drive save, render edited portrait poses in the browser, send them to `/api/boomerang`, and receive a six-second MP4 back into browser memory. Bounded temporary files are deleted in `finally`; two jobs per process, timeouts, no shell commands, no database.
-3. After explicit Drive consent, send PNG + MP4 to `/api/photos`; verify both media streams before any Drive mutation.
-4. Create a private session folder under private `photos/`, upload the two files, then set `anyone:reader` on **that session folder only**. Verify inherited public access on both children.
+2. After the final camera capture, render natural portrait poses in the browser, send them to `/api/boomerang`, and receive a six-second MP4 back into browser memory. Bounded temporary files are deleted in `finally`; two jobs per process, timeouts, no shell commands, no database.
+3. Automatically send PNG + MP4 and the bounded layout snapshot to `/api/photos`; verify both media streams and layout dimensions before any Drive mutation. Guest starts through Buka kamera and countdown without a confirmation checkbox; privacy remains available in the footer.
+4. Create a private session folder under private `photos/`, integrate the folder QR into the PNG footer, upload the two files, then set `anyone:reader` on **that session folder only**. Verify inherited public access on both children.
 5. Return the actual Drive folder `webViewLink` only after all steps succeed. Roll back the session best-effort on partial failure; never return a QR for incomplete results.
 6. Client validates the exact Drive folder ID and generates QR. Original captures are not stored in Drive. Browser photos/MP4/QR disappear on refresh; uploaded Drive files remain. Request loss can still create a duplicate folder on manual retry.
 
 ### Per-file public link risks
 
-The Google Drive result remains retrievable if link was copied or scanned; closing the photobooth tab does not revoke access. User photos are not guaranteed private because links can be forwarded. Show the consent clearly and document operator deletion/retention.
+The Google Drive result remains retrievable if link was copied or scanned; closing the photobooth tab does not revoke access. User photos are not guaranteed private because links can be forwarded. Keep the privacy notice available and document operator deletion/retention.
 
 ## 4. Admin frame lifecycle
 

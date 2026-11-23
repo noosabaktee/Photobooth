@@ -4,7 +4,8 @@ import {
   BOOMERANG_HEIGHT,
   BOOMERANG_IMAGE_BYTES,
 } from "./boomerang";
-import { eventIdentity } from "./event";
+import { selectedStarterStyle } from "./starter-artwork";
+import { videoArtwork, videoLayout } from "./video-design";
 export type Filter = "natural" | "bw" | "warm" | "cool";
 export type Photo = { url: string; mirror: boolean };
 export function filterPixel(r: number, g: number, b: number, filter: Filter) {
@@ -99,6 +100,9 @@ export async function exportBoomerangFrames(
   )
     throw new Error("Lengkapi semua foto sebelum membuat video.");
   await document.fonts.ready;
+  const artwork = await loadImage(
+    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(videoArtwork(selectedStarterStyle(frame)))}`,
+  );
   const output: Blob[] = [];
   for (const slot of [...frame.slots].sort((a, b) => a.order - b.order)) {
     const photo = photos[slot.order],
@@ -107,25 +111,16 @@ export async function exportBoomerangFrames(
     canvas.width = BOOMERANG_WIDTH;
     canvas.height = BOOMERANG_HEIGHT;
     const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#edf5ec";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#124d36";
-    ctx.fillRect(0, 0, canvas.width, 228);
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 64px sans-serif";
-    ctx.fillText(eventIdentity.name, 540, 110);
-    ctx.font = "28px sans-serif";
-    ctx.fillText(eventIdentity.company, 540, 169);
+    ctx.drawImage(artwork, 0, 0, canvas.width, canvas.height);
     // Keep a generous portrait photo area; never stretch the camera image.
     drawSlot(
       ctx,
       {
         ...slot,
-        x: 36 / 1080,
-        y: 270 / 1920,
-        width: 1008 / 1080,
-        height: 1344 / 1920,
+        x: videoLayout.photo.x / 1080,
+        y: videoLayout.photo.y / 1920,
+        width: videoLayout.photo.width / 1080,
+        height: videoLayout.photo.height / 1920,
         borderRadius: 0.025,
       },
       image.source,
@@ -135,11 +130,6 @@ export async function exportBoomerangFrames(
       canvas.width,
       canvas.height,
     );
-    ctx.fillStyle = "#124d36";
-    ctx.font = "700 42px sans-serif";
-    ctx.fillText(eventIdentity.tagline, 540, 1735);
-    ctx.font = "26px sans-serif";
-    ctx.fillText("HOYA-HOYA MEMORIES · KMI", 540, 1810);
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
         (b) =>

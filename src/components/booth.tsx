@@ -4,8 +4,8 @@ import {
   Camera,
   ArrowLeft,
   Download,
-  RefreshCw,
   Upload,
+  Timer,
   Check,
   Copy,
   ExternalLink,
@@ -20,16 +20,16 @@ import { CaptureCountdown, Celebration, NextGuestButton } from "./self-service";
 import { requestJson } from "@/lib/client";
 import type { PublicFrame } from "@/lib/schema";
 import {
-  drawComposition,
   exportComposition,
   exportBoomerangFrames,
   loadImage,
-  replacePhoto,
   type Photo,
-  type Filter,
 } from "@/lib/compositor";
 import { driveFolderUrl } from "@/lib/urls";
 import { eventIdentity } from "@/lib/event";
+import { scanSecondsSchema } from "@/lib/kiosk-settings";
+import { exportPrintPreview } from "@/lib/print-preview-client";
+import { selectedStarterStyle } from "@/lib/starter-artwork";
 
 type Result =
   | { mode: "mock"; message: string }
@@ -38,20 +38,24 @@ type Result =
       viewUrl: string;
       folderId: string;
       folderName: string;
+      photoDataUrl: string;
+      videoDataUrl: string;
       files: { fileId: string; filename: string; mimeType: string }[];
     };
-const labels = ["Pilih frame", "Ambil foto", "Cek & simpan", "Ambil hasil"];
+const labels = ["Pilih frame", "Ambil foto", "Simpan otomatis", "Scan QR"];
 export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
+  const composition = useRef<{ blob: Blob; url: string } | null>(null);
   const [movie, setMovie] = useState<{ blob: Blob; url: string } | null>(null);
   const [preview, setPreview] = useState<"photo" | "video">("photo");
-  const [reviewPanel, setReviewPanel] = useState<"edit" | "save">("edit");
+  const [scanSeconds, setScanSeconds] = useState(15);
+  const [qrReady, setQrReady] = useState(false);
+  const [remaining, setRemaining] = useState(15);
+  const resetRef = useRef<() => void>(() => {});
   const [step, setStep] = useState(0),
     [frame, setFrame] = useState<PublicFrame | null>(null),
     [overlay, setOverlay] = useState(""),
     [photos, setPhotos] = useState<Photo[]>([]);
-  const [filter, setFilter] = useState<Filter>("natural"),
-    [mirror, setMirror] = useState(true),
-    [retake, setRetake] = useState<number | null>(null),
+  const [mirror, setMirror] = useState(true),
     [countdown, setCountdown] = useState<number | null>(null),
     [shot, setShot] = useState(0);
   const [camera, setCamera] = useState(false),
@@ -60,14 +64,12 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     [busy, setBusy] = useState(""),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
-  const [consent, setConsent] = useState(false),
-    [rendered, setRendered] = useState<{ blob: Blob; url: string } | null>(
+  const [rendered, setRendered] = useState<{ blob: Blob; url: string } | null>(
       null,
     ),
     [result, setResult] = useState<Result | null>(null),
     [qr, setQr] = useState("");
   const video = useRef<HTMLVideoElement>(null),
-    canvas = useRef<HTMLCanvasElement>(null),
     stream = useRef<MediaStream | null>(null),
     sequence = useRef(0),
     urls = useRef(new Set<string>()),
@@ -110,38 +112,21 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     };
   }, []);
   useEffect(() => {
-    if (
-      step !== 2 ||
-      !frame ||
-      !overlay ||
-      photos.length !== frame.slots.length ||
-      !canvas.current
-    )
+    if (step !== 3 || !result || (result.mode === "google-drive" && !qrReady))
       return;
-    let active = true;
-    const target = document.createElement("canvas");
-    void drawComposition(
-      target,
-      frame,
-      overlay,
-      photos,
-      filter,
-      Math.min(frame.dimensions.width, 720),
-    )
-      .then(() => {
-        if (active && canvas.current) {
-          canvas.current.width = target.width;
-          canvas.current.height = target.height;
-          canvas.current.getContext("2d")?.drawImage(target, 0, 0);
-        }
-      })
-      .catch((e) => {
-        if (active) setError((e as Error).message);
-      });
-    return () => {
-      active = false;
+    const deadline = Date.now() + scanSeconds * 1000;
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(left);
+      if (left === 0) resetRef.current();
     };
-  }, [step, frame, overlay, photos, filter]);
+    const interval = window.setInterval(tick, 200);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [step, result, qrReady, scanSeconds]);
   useEffect(() => {
     if (result?.mode !== "google-drive") return;
     const value = driveFolderUrl(result.viewUrl, result.folderId);
@@ -170,6 +155,10 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
       setBusy("Memuat overlay…");
       setError("");
       try {
+        const settings = await requestJson<{ scanSeconds: number }>(
+          "/api/settings",
+        );
+        const duration = scanSecondsSchema.parse(settings.scanSeconds);
         const response = await fetch(selected.overlayUrl, {
           cache: "no-store",
         });
@@ -178,15 +167,19 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         const blob = await response.blob();
         const url = remember(blob);
         await loadImage(url);
+        setScanSeconds(duration);
+        setRemaining(duration);
+        setQrReady(false);
         setOverlay(url);
         setFrame(selected);
+        setShot(0);
         setPhotos([]);
         setStep(1);
         setRendered(null);
+        composition.current = null;
         setMovie(null);
         setPreview("photo");
         setResult(null);
-        setConsent(false);
       } catch (e) {
         setError((e as Error).message);
       } finally {
@@ -215,6 +208,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     };
   }, [select]);
   async function openCamera(deviceId = device) {
+    if (busy) return;
     stop();
     setError("");
     setBusy("Menyiapkan kamera…");
@@ -269,11 +263,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     const run = ++sequence.current;
     setBusy("Mengambil foto…");
     setError("");
-    let next = [...photos];
-    const targets =
-      retake === null
-        ? Array.from({ length: frame.slots.length }, (_, i) => i)
-        : [retake];
+    const next = [...photos];
+    const targets = Array.from({ length: frame.slots.length }, (_, i) => i);
     try {
       for (const index of targets) {
         setShot(index);
@@ -304,17 +295,16 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         );
         if (run !== sequence.current) return;
         const photo = { url: remember(blob), mirror };
-        if (index < next.length) next = replacePhoto(next, index, photo);
-        else next.push(photo);
+        next[index] = photo;
         setPhotos([...next]);
         setRendered(null);
+        composition.current = null;
         await new Promise((resolve) => setTimeout(resolve, 350));
       }
       if (run !== sequence.current) return;
       stop();
-      setRetake(null);
       setStep(2);
-      setConsent(false);
+      await save(next);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -324,152 +314,166 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
       }
     }
   }
-  async function render() {
-    if (rendered) return rendered;
-    if (!frame) throw new Error("Pilih frame dahulu.");
-    const blob = await exportComposition(frame, overlay, photos, filter);
-    const value = { blob, url: remember(blob) };
-    setRendered(value);
-    return value;
+  function localDownload(url: string, filename: string) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
   }
-  function invalidateMovie() {
-    if (movie) {
-      URL.revokeObjectURL(movie.url);
-      urls.current.delete(movie.url);
-    }
-    setMovie(null);
-    setPreview("photo");
-  }
-  async function renderMovie() {
-    if (movie) return movie;
-    if (!frame) throw new Error("Pilih frame dahulu.");
-    const images = await exportBoomerangFrames(frame, photos, filter);
-    const form = new FormData();
-    images.forEach((image, i) => form.append("frames", image, `pose-${i}.jpg`));
-    form.set("processingConsent", "true");
-    network.current = new AbortController();
-    const response = await fetch("/api/boomerang", {
-      method: "POST",
-      body: form,
-      cache: "no-store",
-      signal: network.current.signal,
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      throw new Error(data?.error?.message || "Video gagal dibuat. Coba lagi.");
-    }
-    const blob = await response.blob();
-    if (blob.type !== "video/mp4") throw new Error("Format video tidak valid.");
-    const value = { blob, url: remember(blob) };
-    setMovie(value);
-    return value;
-  }
-  async function videoAction(download = false) {
-    if (busy) return;
-    setBusy("Membuat video MP4…");
-    setError("");
-    try {
-      const value = await renderMovie();
-      setPreview("video");
-      if (download) {
-        const a = document.createElement("a");
-        a.href = value.url;
-        a.download = "hoya-hoya-days-kmi-video.mp4";
-        a.click();
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy("");
-    }
-  }
-  async function download() {
-    setBusy("Membuat PNG resolusi penuh…");
-    setError("");
-    try {
-      const output = await render();
-      const a = document.createElement("a");
-      a.href = output.url;
-      a.download = eventIdentity.downloadFilename;
-      a.click();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy("");
-    }
-  }
-  async function save() {
-    if (!consent || uploadLock.current) return;
+  async function save(captured = photos) {
+    if (uploadLock.current || !frame || captured.length !== frame.slots.length)
+      return;
     uploadLock.current = true;
-    setBusy("Membuat hasil & mengunggah…");
+    setStep(2);
+    setBusy("Menyiapkan kolase...");
     setError("");
     try {
-      const output = await render();
+      const printLayout = {
+        dimensions: frame.dimensions,
+        starterStyle: selectedStarterStyle(frame),
+        photoBottom: Math.min(
+          frame.dimensions.height,
+          Math.ceil(
+            Math.max(...frame.slots.map((s) => s.y + s.height)) *
+              frame.dimensions.height,
+          ),
+        ),
+      };
+      let output = composition.current;
+      if (!output) {
+        const blob = await exportComposition(
+          frame,
+          overlay,
+          captured,
+          "natural",
+        );
+        output = { blob, url: remember(blob) };
+        composition.current = output;
+      }
+      if (!rendered) {
+        const blob = await exportPrintPreview(output.url, printLayout);
+        setRendered({ blob, url: remember(blob) });
+      }
       if (output.blob.size > 12 * 1024 * 1024)
         throw new Error(
-          "PNG melebihi batas 12 MB. Download lokal atau gunakan frame resolusi lebih kecil.",
+          "PNG melebihi batas 12 MB. Download lokal atau gunakan frame lebih kecil.",
         );
+      let videoOutput = movie;
+      if (!videoOutput) {
+        setBusy("Membuat video 6 detik...");
+        const images = await exportBoomerangFrames(frame, captured, "natural");
+        const videoForm = new FormData();
+        images.forEach((image, i) =>
+          videoForm.append("frames", image, `pose-${i}.jpg`),
+        );
+        videoForm.set("processingConsent", "true");
+        network.current = new AbortController();
+        const response = await fetch("/api/boomerang", {
+          method: "POST",
+          body: videoForm,
+          cache: "no-store",
+          signal: network.current.signal,
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          throw new Error(
+            data?.error?.message || "Video gagal dibuat. Coba lagi.",
+          );
+        }
+        const blob = await response.blob();
+        if (blob.type !== "video/mp4")
+          throw new Error("Format video tidak valid.");
+        videoOutput = { blob, url: remember(blob) };
+        setMovie(videoOutput);
+      }
+      setBusy(
+        mode === "mock"
+          ? "Memvalidasi kolase + video demo..."
+          : "Mengirim kolase + video ke Drive...",
+      );
       const form = new FormData();
       form.set("photo", output.blob, "final.png");
-      setBusy("Membuat video & mengunggah dua hasil…");
-      const video = await renderMovie();
-      form.set("video", video.blob, "boomerang.mp4");
+      form.set("video", videoOutput.blob, "boomerang.mp4");
       form.set("consent", "true");
-      form.set("templateId", frame!.id);
+      form.set("printLayout", JSON.stringify(printLayout));
       network.current = new AbortController();
       const response = await requestJson<Result>("/api/photos", {
         method: "POST",
         body: form,
         signal: network.current.signal,
       });
-      if (
-        response.mode !== "mock" &&
-        (response.mode !== "google-drive" ||
-          !driveFolderUrl(response.viewUrl, response.folderId))
-      )
-        throw new Error("Link Drive tidak valid. Download hasil lokal.");
+      if (response.mode === "google-drive") {
+        if (
+          !driveFolderUrl(response.viewUrl, response.folderId) ||
+          !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(
+            response.photoDataUrl,
+          ) ||
+          response.photoDataUrl.length > 17 * 1024 * 1024 ||
+          typeof response.videoDataUrl !== "string" ||
+          !/^data:video\/mp4;base64,[A-Za-z0-9+/=]+$/.test(
+            response.videoDataUrl,
+          ) ||
+          response.videoDataUrl.length > 23 * 1024 * 1024
+        )
+          throw new Error(
+            "Hasil atau link Drive tidak valid. Download lokal atau hubungi operator.",
+          );
+        const data = atob(response.photoDataUrl.split(",")[1]);
+        const blob = new Blob([Uint8Array.from(data, (c) => c.charCodeAt(0))], {
+          type: "image/png",
+        });
+        const url = remember(blob);
+        await loadImage(url);
+        const videoData = atob(response.videoDataUrl.split(",")[1]);
+        const videoBytes = Uint8Array.from(videoData, (c) => c.charCodeAt(0));
+        if (
+          videoBytes.length > 16 * 1024 * 1024 ||
+          String.fromCharCode(...videoBytes.slice(4, 8)) !== "ftyp"
+        )
+          throw new Error("Video final tidak valid.");
+        const finalMovie = new Blob([videoBytes], { type: "video/mp4" });
+        setRendered({ blob, url });
+        setMovie({ blob: finalMovie, url: remember(finalMovie) });
+      } else if (response.mode !== "mock")
+        throw new Error("Respons penyimpanan tidak valid.");
+      setQrReady(false);
+      setRemaining(scanSeconds);
       setResult(response);
       setStep(3);
     } catch (e) {
       setError(
-        `${(e as Error).message} Hasil masih tersedia selama halaman terbuka. Jika respons terputus setelah upload, retry mungkin membuat folder tambahan.`,
+        `${(e as Error).message} Hasil tetap tersedia. Retry setelah respons terputus mungkin membuat folder tambahan.`,
       );
     } finally {
       uploadLock.current = false;
       setBusy("");
     }
   }
-  function startRetake(index: number | null) {
-    setReviewPanel("edit");
-    stop();
-    setRetake(index);
-    setStep(1);
-    setError("");
-    setRendered(null);
-    invalidateMovie();
-    setConsent(false);
-  }
   function reset() {
-    setReviewPanel("edit");
     stop();
     urls.current.forEach((url) => URL.revokeObjectURL(url));
     urls.current.clear();
     setPhotos([]);
+    setShot(0);
+    setMirror(true);
     setFrame(null);
     setOverlay("");
     setRendered(null);
+    composition.current = null;
     setMovie(null);
     setPreview("photo");
     setResult(null);
     setQr("");
-    setConsent(false);
-    setRetake(null);
+    setQrReady(false);
+    setRemaining(scanSeconds);
     setStep(0);
     setError("");
     setNotice("");
-    setFilter("natural");
     window.history.replaceState(null, "", "/booth");
   }
+  useEffect(() => {
+    resetRef.current = reset;
+  });
   return (
     <section className="booth-session" data-step={step}>
       <ol className="stepper" aria-label="Tahap photobooth">
@@ -491,7 +495,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
             [
               "Temukan frame favoritmu.",
               "Satu tim, pose paling seru!",
-              "Sedikit sentuhan, banyak kenangan.",
+              "Menyimpan momenmu...",
               "Kenangan Hoya-Hoya, untuk dibawa pulang.",
             ][step]
           }
@@ -504,8 +508,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 ? "Posisikan diri, lalu ketuk Mulai countdown. Foto diambil otomatis."
                 : "Ketuk Buka kamera, lalu pilih Izinkan pada browser."
               : step === 2
-                ? "Cek jepretanmu. Kalau sudah suka, lanjut Simpan & bagikan."
-                : "Scan QR atau download hasil, lalu ketuk Foto lagi untuk sesi berikutnya."}
+                ? "Kolase dan video otomatis diproses. Tunggu sampai QR tampil."
+                : "Scan QR sekarang. Layar akan kembali otomatis untuk sesi berikutnya."}
         </p>
       </div>
       {mode === "mock" && (
@@ -579,9 +583,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
               </div>
               <div className="camera-toolbar">
                 <span className="eyebrow">
-                  {retake === null
-                    ? `FOTO ${Math.min(shot + 1, frame.slots.length)} / ${frame.slots.length}`
-                    : `ULANG FOTO ${retake + 1}`}
+                  {`FOTO ${Math.min(shot + 1, frame.slots.length)} / ${frame.slots.length}`}
                 </span>
                 <Button
                   variant="ghost"
@@ -597,11 +599,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                   <>
                     <Button onClick={() => void capture()} disabled={!!busy}>
                       <Camera size={19} />
-                      {busy
-                        ? "Sedang foto…"
-                        : retake === null
-                          ? "Mulai countdown"
-                          : "Ambil ulang foto"}
+                      {busy ? "Sedang foto…" : "Mulai countdown"}
                     </Button>
                     <Button
                       variant="secondary"
@@ -644,8 +642,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
             <aside className="capture-sidebar">
               <h2>Senyum bareng, Hoya-Hoya!</h2>
               <p>
-                Hitungan 3 detik untuk setiap foto. Santai, kamu bisa ulang
-                nanti.
+                Hitungan 3 detik untuk setiap foto, lalu jeda setengah detik.
+                Hasil langsung disimpan otomatis.
               </p>
               <div
                 className="capture-thumbs"
@@ -682,21 +680,9 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 ))}
               </div>
               <p className="small">
-                Foto kurang cocok? Nanti bisa diulang satu per satu. Tidak perlu
-                buru-buru.
+                Setelah foto terakhir, tunggu QR tampil lalu scan dengan HP.
+                Tidak ada pilihan filter.
               </p>
-              {photos.length === frame.slots.length && (
-                <Button
-                  variant="secondary"
-                  disabled={!!busy}
-                  onClick={() => {
-                    stop();
-                    setStep(2);
-                  }}
-                >
-                  Kembali ke review
-                </Button>
-              )}
               <Button variant="ghost" disabled={!!busy} onClick={reset}>
                 <ArrowLeft size={17} /> Ganti frame
               </Button>
@@ -704,206 +690,60 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
           </div>
         )}
         {step === 2 && frame && (
-          <div className="review-layout">
-            <div className="output-preview">
-              <div className="output-tabs" aria-label="Jenis preview hasil">
-                <button
-                  disabled={!!busy}
-                  aria-pressed={preview === "photo"}
-                  onClick={() => setPreview("photo")}
-                >
-                  Kolase PNG
-                </button>
-                <button
-                  disabled={!!busy}
-                  aria-pressed={preview === "video"}
-                  onClick={() => void videoAction()}
-                >
-                  Preview video
-                </button>
-              </div>
-              <p className="video-processing-note">
-                MP4 diproses sementara di server.
-              </p>
-              <div className="composition-stage">
-                <canvas
-                  ref={canvas}
-                  hidden={preview !== "photo"}
-                  aria-label="Preview hasil photo strip"
-                />
-                {preview === "video" && movie && (
-                  <video
-                    src={movie.url}
-                    controls
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                    aria-label="Preview video MP4"
-                  />
-                )}
-              </div>
-            </div>
-            <section className="review-controls">
-              <p className="eyebrow">THE FINAL LITTLE DETAILS</p>
-              <h2>Momen tim yang berkesan.</h2>
+          <div className="auto-upload-layout">
+            {rendered && (
+              <img
+                className="auto-upload-preview"
+                src={rendered.url}
+                alt="Kolase menunggu upload"
+              />
+            )}
+            <section className="auto-upload-card">
+              <Upload size={32} />
+              <h2>
+                {busy
+                  ? "Sebentar, momennya sedang disimpan."
+                  : "Penyimpanan belum selesai."}
+              </h2>
               <p>
-                Kolase + video. Saat membuat video, foto edit diproses sementara
-                di server lalu dihapus.
+                {busy ||
+                  "Periksa jaringan lalu coba lagi. Hasil belum dihapus."}
               </p>
-              <div className="review-tabs" aria-label="Panel review">
-                <button
-                  aria-pressed={reviewPanel === "edit"}
-                  disabled={!!busy}
-                  onClick={() => setReviewPanel("edit")}
-                >
-                  Edit foto
-                </button>
-                <button
-                  aria-pressed={reviewPanel === "save"}
-                  disabled={!!busy}
-                  onClick={() => setReviewPanel("save")}
-                >
-                  Simpan & bagikan
-                </button>
-              </div>
-              {reviewPanel === "edit" ? (
-                <div className="review-editor">
-                  <fieldset className="filter-fieldset" disabled={!!busy}>
-                    <legend>Nuansa foto</legend>
-                    <div className="filter-options">
-                      {(["natural", "bw", "warm", "cool"] as Filter[]).map(
-                        (f) => (
-                          <button
-                            key={f}
-                            onClick={() => {
-                              setFilter(f);
-                              setRendered(null);
-                              invalidateMovie();
-                              setConsent(false);
-                            }}
-                            aria-pressed={filter === f}
-                          >
-                            {
-                              {
-                                natural: "Natural",
-                                bw: "B&W",
-                                warm: "Warm",
-                                cool: "Cool",
-                              }[f]
-                            }
-                          </button>
-                        ),
-                      )}
-                    </div>
-                  </fieldset>
-                  <div
-                    className="retake-grid"
-                    style={{
-                      gridTemplateColumns: `repeat(${photos.length},minmax(0,1fr))`,
-                    }}
-                  >
-                    {photos.map((p, i) => (
-                      <button
-                        key={i}
-                        disabled={!!busy}
-                        onClick={() => startRetake(i)}
-                        aria-label={`Ulang foto ${i + 1}`}
-                      >
-                        <img
-                          src={p.url}
-                          alt={`Foto ${i + 1}`}
-                          style={{
-                            transform: p.mirror ? "scaleX(-1)" : "none",
-                          }}
-                        />
-                        <span>
-                          <RefreshCw size={12} /> Ulang {i + 1}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="inline-actions">
-                    <Button
-                      variant="ghost"
-                      disabled={!!busy}
-                      onClick={() => startRetake(null)}
-                    >
-                      <RefreshCw size={16} /> Ulang semua
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      disabled={!!busy}
-                      onClick={() => {
-                        setPhotos((p) =>
-                          p.map((photo) => ({
-                            ...photo,
-                            mirror: !photo.mirror,
-                          })),
-                        );
-                        setRendered(null);
-                        invalidateMovie();
-                        setConsent(false);
-                      }}
-                    >
-                      <FlipHorizontal size={17} /> Balik foto
-                    </Button>
-                  </div>
-                </div>
+              {busy ? (
+                <span className="spinner" aria-hidden="true" />
               ) : (
-                <div className="review-save">
-                  <label className="consent">
-                    <input
-                      type="checkbox"
-                      checked={consent}
-                      disabled={!!busy}
-                      onChange={(e) => setConsent(e.target.checked)}
-                    />
-                    <span>
-                      Saya setuju kolase PNG dan video MP4 disimpan dalam folder
-                      Google Drive pengelola dan dapat dilihat siapa saja yang
-                      memiliki link. Hasil di Drive tidak otomatis terhapus saat
-                      tab ditutup.
-                    </span>
-                  </label>
-                  <Button
-                    disabled={!consent || !!busy}
-                    onClick={() => void save()}
-                  >
-                    <Upload size={18} /> Simpan ke Drive & buat QR
-                  </Button>
-                  <p className="small">
-                    Satu QR membuka folder berisi kolase PNG dan video MP4. Mode
-                    demo tidak menyimpan ke Drive.
-                  </p>
+                <div className="auto-upload-actions">
+                  <Button onClick={() => void save()}>Coba simpan lagi</Button>
+                  {rendered && (
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        localDownload(
+                          rendered.url,
+                          eventIdentity.downloadFilename,
+                        )
+                      }
+                    >
+                      Download PNG lokal
+                    </Button>
+                  )}
+                  {movie && (
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        localDownload(movie.url, "hoya-hoya-days-kmi-video.mp4")
+                      }
+                    >
+                      Download MP4
+                    </Button>
+                  )}
+                  <NextGuestButton disabled={false} onConfirm={reset} />
                 </div>
               )}
-              <div className="review-download">
-                <Button
-                  variant="secondary"
-                  disabled={!!busy}
-                  onClick={() => void download()}
-                >
-                  <Download size={18} /> Download PNG lokal
-                </Button>
-                {reviewPanel === "edit" && (
-                  <Button
-                    disabled={!!busy}
-                    onClick={() => setReviewPanel("save")}
-                  >
-                    Lanjut simpan →
-                  </Button>
-                )}
-                {reviewPanel === "save" && (
-                  <Button
-                    variant="secondary"
-                    disabled={!!busy}
-                    onClick={() => void videoAction(true)}
-                  >
-                    <Download size={18} /> Download MP4
-                  </Button>
-                )}
-              </div>
+              <p className="small">
+                Timer scan baru dimulai setelah hasil siap. Jangan refresh saat
+                proses berlangsung.
+              </p>
             </section>
           </div>
         )}
@@ -921,7 +761,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 <button
                   disabled={!!busy}
                   aria-pressed={preview === "video"}
-                  onClick={() => void videoAction()}
+                  onClick={() => setPreview("video")}
                 >
                   Video MP4
                 </button>
@@ -970,6 +810,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                       width={280}
                       height={280}
                       alt="QR folder Google Drive kolase dan video"
+                      onLoad={() => setQrReady(true)}
                     />
                   )}
                   <div className="inline-actions">
@@ -1000,26 +841,36 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                   </div>
                 </>
               )}
+              <p className="scan-timer" role="timer" aria-live="off">
+                <Timer size={18} /> Kembali ke pilih frame dalam{" "}
+                <strong>{remaining}</strong> detik
+              </p>
               <div className="result-downloads">
                 <Button
                   variant="secondary"
                   disabled={!!busy}
-                  onClick={() => void download()}
+                  onClick={() =>
+                    localDownload(rendered.url, eventIdentity.downloadFilename)
+                  }
                 >
                   <Download size={18} /> PNG
                 </Button>
                 <Button
                   variant="secondary"
                   disabled={!!busy}
-                  onClick={() => void videoAction(true)}
+                  onClick={() =>
+                    movie &&
+                    localDownload(movie.url, "hoya-hoya-days-kmi-video.mp4")
+                  }
                 >
                   <Download size={18} /> MP4
                 </Button>
                 <NextGuestButton disabled={!!busy} onConfirm={reset} />
               </div>
               <p className="small">
-                Simpan sebelum keluar. QR hilang saat refresh; kolase dan video
-                yang sudah di-upload tetap ada di Drive.
+                {result.mode === "mock"
+                  ? "Unduh hasil demo sebelum layar berganti. Tidak ada file yang disimpan ke Drive."
+                  : "Scan sekarang. QR juga ada di PNG untuk dicetak. File di Drive tetap tersimpan setelah layar berganti."}
               </p>
             </section>
           </div>

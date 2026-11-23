@@ -2,6 +2,8 @@
 
 **Revisi aktif Hoya-Hoya Days / Kalbe Morinaga Indonesia:** tiga foto kamera, kiosk responsive tanpa scroll, kolase PNG dan video MP4 enam detik. QR membuka folder hasil sesi dengan kedua file, bukan satu file PNG. [13_BOOMERANG.md](13_BOOMERANG.md) dan [API contract](04_API_CONTRACT.md) terbaru menggantikan bagian spesifikasi awal yang menyebut satu foto final saja.
 
+**Antrean event 23 November 2026:** Buka kamera langsung aktif tanpa checkbox; informasi proses/penyimpanan publik tersedia di footer dan izin kamera browser tetap berlaku. Foto natural tanpa panel review/nuansa, simpan otomatis sesudah foto terakhir. Area QR cetak melanjutkan desain footer frame, tanpa menutup/menggeser foto. Setelah QR tampil, durasi default 15 detik → bersihkan browser → pilih frame. Admin mengatur durasi 5–300 detik melalui JSON privat di Drive; file hasil Drive tetap ada. Ini menggantikan ketentuan retake/edit/upload manual pada uraian MVP awal di bawah. Kegagalan upload menjaga media dan tidak menjalankan timer reset.
+
 ## 1. Overview
 
 **Nama sementara:** PHOTOBOOTH / SnapStrip (brand bisa diganti).  

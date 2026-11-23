@@ -66,11 +66,6 @@ test("canceling next guest preserves the result; confirming clears the session",
   await page.goto("/booth");
   await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
   await takePhotos(page);
-  await page
-    .getByRole("button", { name: "Simpan & bagikan", exact: true })
-    .click();
-  await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Simpan ke Drive & buat QR" }).click();
   await expect(
     page.getByRole("heading", { name: /Demo selesai/ }),
   ).toBeVisible();

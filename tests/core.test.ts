@@ -11,6 +11,11 @@ import {
 import { cover, mirroredX, replacePhoto, filterPixel } from "@/lib/compositor";
 import { driveViewUrl, driveFolderUrl } from "@/lib/urls";
 import { slideshowOrder } from "@/lib/boomerang";
+vi.mock("@/lib/video-server", () => ({
+  stampVideo: vi.fn(async (bytes: Buffer) =>
+    Buffer.concat([Buffer.from("stamped:"), bytes]),
+  ),
+}));
 import { checkOrigin, signSession, verifySession, throttle } from "@/lib/auth";
 import {
   validateImage,

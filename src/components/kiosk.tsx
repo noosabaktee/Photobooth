@@ -128,8 +128,8 @@ export function KioskFooter() {
             <div>
               <strong>Izinkan kamera & bersiap</strong>
               <p>
-                Ketuk Buka kamera, pilih Izinkan, lalu Mulai countdown. Ada
-                hitungan 3 detik, lalu tahan pose sebentar sebelum dijepret.
+                Buka kamera, pilih Izinkan, lalu Mulai countdown. Ikuti 3–2–1
+                dan jeda setengah detik.
               </p>
             </div>
           </li>
@@ -140,8 +140,8 @@ export function KioskFooter() {
             <div>
               <strong>Simpan kenanganmu</strong>
               <p>
-                Ulangi foto bila perlu. Download PNG/MP4, atau setujui simpan ke
-                Drive lalu scan QR. Ketuk Foto lagi setelah selesai.
+                Hasil tersimpan otomatis. Scan QR sebelum waktu habis. QR juga
+                ada di PNG cetak.
               </p>
             </div>
           </li>

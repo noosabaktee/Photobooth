@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { installCamera, takePhotos } from "./camera-helper";
+import { installResultFixture } from "./result-helper";
 async function fits(page: Page) {
   const report = await page.evaluate(() => {
     const problems: string[] = [];
@@ -50,6 +51,23 @@ async function fits(page: Page) {
       }
     }
     window.scrollTo(0, 9999);
+    const timer = document
+      .querySelector(".scan-timer")
+      ?.getBoundingClientRect();
+    const instructions = document
+      .querySelector(".result-card > p:not(.small,.scan-timer)")
+      ?.getBoundingClientRect();
+    if (
+      timer &&
+      instructions &&
+      Math.min(timer.bottom, instructions.bottom) -
+        Math.max(timer.top, instructions.top) >
+        1 &&
+      Math.min(timer.right, instructions.right) -
+        Math.max(timer.left, instructions.left) >
+        1
+    )
+      problems.push("scan timer overlaps QR instructions");
     if (window.scrollY > 0) problems.push("document can scroll");
     return problems;
   });
@@ -107,19 +125,10 @@ for (const viewport of [
       path: `.qa/kiosk-camera-${viewport.width}x${viewport.height}.png`,
     });
     await takePhotos(page);
-    await expect(page.getByLabel("Preview hasil photo strip")).toBeVisible();
     await fits(page);
     await page.screenshot({
-      path: `.qa/kiosk-review-${viewport.width}x${viewport.height}.png`,
+      path: `.qa/kiosk-result-${viewport.width}x${viewport.height}.png`,
     });
-    await page
-      .getByRole("button", { name: "Simpan & bagikan", exact: true })
-      .click();
-    await fits(page);
-    await page.getByRole("checkbox").check();
-    await page
-      .getByRole("button", { name: "Simpan ke Drive & buat QR" })
-      .click();
     await expect(
       page.getByRole("heading", { name: /Demo selesai/ }),
     ).toBeVisible();
@@ -146,41 +155,10 @@ for (const viewport of [
   }) => {
     await installCamera(page);
     await page.setViewportSize(viewport);
-    // Test-only response exercises the QR panel; no Google network call or live upload.
-    await page.route("**/api/photos", (route) =>
-      route.fulfill({
-        status: 201,
-        contentType: "application/json",
-        body: JSON.stringify({
-          mode: "google-drive",
-          folderId: "test-only-layout-id",
-          folderName: "test-only-session",
-          files: [
-            {
-              fileId: "test-png",
-              filename: "kolase.png",
-              mimeType: "image/png",
-            },
-            {
-              fileId: "test-mp4",
-              filename: "boomerang.mp4",
-              mimeType: "video/mp4",
-            },
-          ],
-          viewUrl: "https://drive.google.com/drive/folders/test-only-layout-id",
-        }),
-      }),
-    );
+    await installResultFixture(page);
     await page.goto("/booth");
     await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
     await takePhotos(page);
-    await page
-      .getByRole("button", { name: "Simpan & bagikan", exact: true })
-      .click();
-    await page.getByRole("checkbox").check();
-    await page
-      .getByRole("button", { name: "Simpan ke Drive & buat QR" })
-      .click();
     await expect(
       page.getByAltText("QR folder Google Drive kolase dan video"),
     ).toBeVisible();
@@ -200,15 +178,8 @@ test("three-photo Mint frame, pagination and resize keep controls reachable", as
   await page.getByRole("button", { name: "Pilih Mint Party" }).click();
   await fits(page);
   await takePhotos(page);
-  await expect(
-    page.getByRole("button", { name: "Ulang foto 3", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator(".retake-grid button")).toHaveCount(3);
+  await expect(page.locator(".filter-options, .retake-grid")).toHaveCount(0);
   await fits(page);
   await page.setViewportSize({ width: 667, height: 375 });
-  await fits(page);
-  await page
-    .getByRole("button", { name: "Simpan & bagikan", exact: true })
-    .click();
   await fits(page);
 });

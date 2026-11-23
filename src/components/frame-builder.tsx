@@ -22,7 +22,7 @@ import {
   type Slot,
 } from "@/lib/schema";
 import { requestJson } from "@/lib/client";
-import { drawComposition, dummyPhoto, loadImage } from "@/lib/compositor";
+import { loadImage } from "@/lib/compositor";
 
 const initial: Draft = {
   name: "",
@@ -40,6 +40,7 @@ export function FrameBuilder({ id }: { id?: string }) {
     [file, setFile] = useState<File | null>(null),
     [selected, setSelected] = useState(0),
     [preview, setPreview] = useState(false),
+    [previewRatio, setPreviewRatio] = useState<number | null>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
@@ -88,29 +89,53 @@ export function FrameBuilder({ id }: { id?: string }) {
   useEffect(() => {
     if (!preview || !overlay || !canvas.current) return;
     let active = true;
-    const temporary = document.createElement("canvas");
-    void drawComposition(
-      temporary,
-      draft,
-      overlay,
-      draft.slots.map((_, i) => ({ url: dummyPhoto(i), mirror: false })),
-      "natural",
-      600,
-    )
-      .then(() => {
-        if (active && canvas.current) {
-          canvas.current.width = temporary.width;
-          canvas.current.height = temporary.height;
-          canvas.current.getContext("2d")?.drawImage(temporary, 0, 0);
-        }
-      })
-      .catch((e) => {
-        if (active) setError(e.message);
+    const controller = new AbortController();
+    let url: string | undefined;
+    void (async () => {
+      const form = new FormData();
+      if (file) form.set("overlay", file, "overlay.png");
+      else {
+        const asset = await fetch(overlay, { signal: controller.signal });
+        if (!asset.ok) throw new Error("Overlay tidak dapat dimuat.");
+        form.set("overlay", await asset.blob(), "overlay.png");
+      }
+      form.set(
+        "metadata",
+        JSON.stringify({ ...draft, name: draft.name || "Preview frame" }),
+      );
+      const response = await fetch("/api/admin/preview", {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+        cache: "no-store",
       });
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).error?.message || "Preview gagal dibuat.",
+        );
+      const blob = await response.blob();
+      if (!active) return;
+      url = URL.createObjectURL(blob);
+      const image = await loadImage(url);
+      if (active && canvas.current) {
+        canvas.current.width = 600;
+        canvas.current.height = Math.round(
+          (600 * image.naturalHeight) / image.naturalWidth,
+        );
+        canvas.current
+          .getContext("2d")
+          ?.drawImage(image, 0, 0, canvas.current.width, canvas.current.height);
+        setPreviewRatio(image.naturalWidth / image.naturalHeight);
+      }
+    })().catch((e) => {
+      if (active) setError(e.message);
+    });
     return () => {
       active = false;
+      controller.abort();
+      if (url) URL.revokeObjectURL(url);
     };
-  }, [preview, overlay, draft]);
+  }, [preview, overlay, draft, file]);
   function updateSlot(changes: Partial<Slot>, index = selected) {
     setDraft((d) => ({
       ...d,
@@ -303,7 +328,10 @@ export function FrameBuilder({ id }: { id?: string }) {
                 className="builder-canvas"
                 ref={area}
                 style={{
-                  aspectRatio: `${draft.dimensions.width}/${draft.dimensions.height}`,
+                  aspectRatio:
+                    preview && previewRatio
+                      ? String(previewRatio)
+                      : `${draft.dimensions.width}/${draft.dimensions.height}`,
                 }}
               >
                 {preview ? (
@@ -410,6 +438,12 @@ export function FrameBuilder({ id }: { id?: string }) {
               {preview ? "Kembali ke editor" : "Preview komposisi"}
             </Button>
           </div>
+          {preview && (
+            <p className="small">
+              Contoh hasil akhir. Area QR akan diisi tautan folder setelah sesi
+              foto selesai.
+            </p>
+          )}
           <details style={{ marginTop: 20 }}>
             <summary>JSON konfigurasi</summary>
             <pre className="builder-json">{JSON.stringify(draft, null, 2)}</pre>

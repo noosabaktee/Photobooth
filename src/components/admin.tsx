@@ -14,6 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { requestJson } from "@/lib/client";
 import type { Frame, PublicFrame } from "@/lib/schema";
+import { AdminSettings } from "./admin-settings";
 export type AdminFrame = Frame &
   Pick<PublicFrame, "overlayUrl" | "thumbnailUrl">;
 export function Login() {
@@ -179,6 +180,7 @@ export function Dashboard({ mode }: { mode: string }) {
           <span>Archived</span>
         </div>
       </div>
+      <AdminSettings />
       {error && (
         <div role="alert" className="error">
           {error} <button onClick={() => void load()}>Muat ulang</button>

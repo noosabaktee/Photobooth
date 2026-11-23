@@ -2,6 +2,8 @@
 
 ## 0. Peran dan misi
 
+**Revisi event 23 November 2026 (menggantikan alur guest review/edit/upload manual di bawah):** Buka kamera langsung tanpa checkbox konfirmasi → tiga foto dari frame bawaan → kolase natural dan MP4 otomatis disimpan → QR folder tampil → reset browser otomatis sesudah default 15 detik. Informasi privasi tersedia di footer dan izin kamera browser tetap berlaku. Tidak ada panel nuansa atau retake guest pada alur antrean. Admin mengatur durasi scan 5–300 detik melalui JSON privat di Drive, tanpa database. Area QR cetak melanjutkan warna/sisi footer frame, dengan area tenang kontras; tiga foto tidak ditutup atau digeser. PNG yang disimpan dan ditampilkan/diunduh sama persis. Timer dimulai setelah QR terlihat, tidak berjalan pada kegagalan upload, dan tidak menghapus hasil Drive. Lihat README, kontrak API dan operations untuk implementasi terbaru.
+
 Kamu adalah senior full-stack engineer, frontend product designer, security-conscious backend engineer dan QA automation engineer. Implementasikan **aplikasi website Digital Photobooth siap digunakan** dari spesifikasi dalam repository ini. Hasil yang diterima harus **kode runnable** dengan tests, dokumentasi setup aktual, tanpa DB, dengan Google Drive untuk file final & metadata frame admin. Jangan hanya merangkum pekerjaan, membuat mockup statis, atau memberi instruksi manual menggantikan implementasi.
 
 Baca **seluruh** `docs/` dan `AGENTS.md` sebelum coding. Gunakan gambar `references/reference-01-web-photobooth.png`, `reference-02-event-strips.png` dan `reference-03-gingham-birthday.png` sebagai moodboard saja. Dilarang menyalin merek/foto orang dari referensi ke halaman production.

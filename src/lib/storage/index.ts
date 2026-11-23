@@ -5,6 +5,9 @@ import { fail } from "../errors";
 import { randomUUID } from "node:crypto";
 import type { Backend } from "./backend";
 import { driveFolderUrl } from "../urls";
+import { printPhoto } from "../print-photo";
+import type { PrintLayout } from "../print-layout";
+import { stampVideo } from "../video-server";
 export function storageMode(): "mock" | "google-drive" {
   const mode = process.env.STORAGE_MODE || "mock";
   if (mode !== "mock" && mode !== "google-drive")
@@ -27,9 +30,11 @@ export async function saveSession(
   bytes: Buffer,
   mime: string,
   video: Buffer,
+  printLayout?: PrintLayout,
 ) {
   const folderName = `Hoya-Hoya-${new Date().toISOString().slice(0, 10)}-${randomUUID()}`;
-  const filename = `kolase.${mime === "image/png" ? "png" : "jpg"}`;
+  const filename =
+    mode === "mock" && mime === "image/jpeg" ? "kolase.jpg" : "kolase.png";
   const videoFilename = "boomerang.mp4";
   // Mock exercises validation/upload flow without retaining personal photo bytes server-side.
   if (mode === "mock")
@@ -44,13 +49,25 @@ export async function saveSession(
   const created: string[] = [];
   try {
     folderId = await store.createFolder("photos", folderName);
-    const photoId = await store.createInFolder(folderId, filename, mime, bytes);
+    const viewUrl = `https://drive.google.com/drive/folders/${folderId}`;
+    const printed = await printPhoto(bytes, viewUrl, printLayout);
+    const finalVideo = await stampVideo(
+      video,
+      viewUrl,
+      printLayout?.starterStyle,
+    );
+    const photoId = await store.createInFolder(
+      folderId,
+      filename,
+      "image/png",
+      printed,
+    );
     created.push(photoId);
     const videoId = await store.createInFolder(
       folderId,
       videoFilename,
       "video/mp4",
-      video,
+      finalVideo,
     );
     created.push(videoId);
     // Publish only after BOTH files exist. Folder inheritance grants access to its children.
@@ -63,9 +80,12 @@ export async function saveSession(
       mode: "google-drive" as const,
       folderId,
       folderName,
-      viewUrl: shared.viewUrl,
+      viewUrl,
+      // Exact bytes uploaded to Drive: preview/download/print use this same PNG.
+      photoDataUrl: `data:image/png;base64,${printed.toString("base64")}`,
+      videoDataUrl: `data:video/mp4;base64,${finalVideo.toString("base64")}`,
       files: [
-        { fileId: photoId, filename, mimeType: mime },
+        { fileId: photoId, filename, mimeType: "image/png" },
         { fileId: videoId, filename: videoFilename, mimeType: "video/mp4" },
       ],
     };

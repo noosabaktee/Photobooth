@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button";
 afterEach(cleanup);
 it("privacy exposes persistent Drive and ephemeral browser semantics", () => {
   render(<Privacy />);
-  expect(
-    screen.getByText(/tetap tersimpan setelah tab ditutup/),
-  ).toBeInTheDocument();
-  expect(screen.getByText(/hilang saat refresh/)).toBeInTheDocument();
+  expect(screen.getByText(/File Drive tetap tersimpan/)).toBeInTheDocument();
+  expect(screen.getByText(/default 15 detik/)).toBeInTheDocument();
 });
 it("upload action can be disabled until consent and keyboard focus is native", () => {
   render(<Button disabled>Simpan ke Drive</Button>);
