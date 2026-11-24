@@ -1,5 +1,13 @@
 # Video MP4 dan folder hasil sesi
 
+## Alur aktif event - 24 November 2026
+
+Peserta membuka `/` atau `/booth` dan langsung masuk layar ambil foto tanpa landing, galeri pilihan frame atau navbar atas. Booth mengambil template aktif dan durasi scan dari `GET /api/settings`, memuat snapshot overlay, lalu menunggu peserta menekan **Buka kamera** pada kunjungan pertama. Kamera hanya otomatis terbuka pada reload lanjutan setelah hasil sesi selesai (timer QR atau Foto lagi). Refresh biasa kembali menunggu Buka kamera. Izin kamera browser tetap diperlukan; Buka kamera tersedia sebagai retry jika perangkat/izin gagal. Peserta menekan **Mulai countdown**. Setelah foto terakhir, PNG + MP4 disimpan otomatis dan QR tampil. Sesudah timer admin habis (default 15 detik), media dibersihkan dan **halaman dimuat ulang**, kamera terbuka untuk peserta berikutnya. Browser tidak dapat mendeteksi apakah QR telah dipindai; pergantian peserta mengikuti timer atau tombol Foto lagi.
+
+Admin tetap menyimpan banyak template dan memilih **Template aktif booth** pada Pengaturan antrean booth, lalu **Simpan pengaturan**. Hanya template published boleh dipilih. `activeFrameId` disimpan bersama durasi dalam JSON privat Drive; tanpa database. Konfigurasi lama/null memakai template published pertama sebagai fallback eksplisit. Template aktif yang di-unpublish/arsip tidak diganti diam-diam: booth meminta operator memilih pengganti. Perubahan berlaku pada halaman/sesi berikutnya, tidak mengganti snapshot sesi yang sedang berlangsung. URL `?frame=...` dari peserta tidak memilih template.
+
+Spesifikasi alur di bagian ini menggantikan ketentuan landing/pilih frame/reset ke galeri pada bagian lama di bawah. Preview/loading/error/final, QR PNG/MP4, privasi memori, dan auth admin tetap mengikuti ketentuan lain.
+
 Revisi terbaru: video mengikuti tema pilihan (Vintage hitam, Gingham pink, Mint mint) dan menyediakan footer QR di luar area pose 3:4. Server memasang QR folder riil setelah folder dibuat, sebelum MP4 diunggah dan sharing diverifikasi. QR tetap tampil sepanjang enam detik dan sama dengan PNG/layar. `videoDataUrl` mengembalikan MP4 final yang sama persis untuk preview/download; mode mock dan fallback sebelum upload tidak mempunyai QR folder. Respons PNG + MP4 dapat sekitar 38 MiB base64; tidak boleh dicatat atau di-cache. File sementara stamping dibersihkan pada sukses/gagal.
 
 Revisi fitur ini menggantikan spesifikasi awal yang menyimpan satu PNG dengan QR per-file. Tidak ada database atau riwayat pengguna yang ditambahkan.

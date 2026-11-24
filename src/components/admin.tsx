@@ -180,7 +180,7 @@ export function Dashboard({ mode }: { mode: string }) {
           <span>Archived</span>
         </div>
       </div>
-      <AdminSettings />
+      <AdminSettings frames={frames} />
       {error && (
         <div role="alert" className="error">
           {error} <button onClick={() => void load()}>Muat ulang</button>

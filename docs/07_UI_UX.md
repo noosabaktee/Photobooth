@@ -1,5 +1,13 @@
 # 07 — Visual direction, screens, interactions
 
+## Alur aktif event - 24 November 2026
+
+Peserta membuka `/` atau `/booth` dan langsung masuk layar ambil foto tanpa landing, galeri pilihan frame atau navbar atas. Booth mengambil template aktif dan durasi scan dari `GET /api/settings`, memuat snapshot overlay, lalu menunggu peserta menekan **Buka kamera** pada kunjungan pertama. Kamera hanya otomatis terbuka pada reload lanjutan setelah hasil sesi selesai (timer QR atau Foto lagi). Refresh biasa kembali menunggu Buka kamera. Izin kamera browser tetap diperlukan; Buka kamera tersedia sebagai retry jika perangkat/izin gagal. Peserta menekan **Mulai countdown**. Setelah foto terakhir, PNG + MP4 disimpan otomatis dan QR tampil. Sesudah timer admin habis (default 15 detik), media dibersihkan dan **halaman dimuat ulang**, kamera terbuka untuk peserta berikutnya. Browser tidak dapat mendeteksi apakah QR telah dipindai; pergantian peserta mengikuti timer atau tombol Foto lagi.
+
+Admin tetap menyimpan banyak template dan memilih **Template aktif booth** pada Pengaturan antrean booth, lalu **Simpan pengaturan**. Hanya template published boleh dipilih. `activeFrameId` disimpan bersama durasi dalam JSON privat Drive; tanpa database. Konfigurasi lama/null memakai template published pertama sebagai fallback eksplisit. Template aktif yang di-unpublish/arsip tidak diganti diam-diam: booth meminta operator memilih pengganti. Perubahan berlaku pada halaman/sesi berikutnya, tidak mengganti snapshot sesi yang sedang berlangsung. URL `?frame=...` dari peserta tidak memilih template.
+
+Spesifikasi alur di bagian ini menggantikan ketentuan landing/pilih frame/reset ke galeri pada bagian lama di bawah. Preview/loading/error/final, QR PNG/MP4, privasi memori, dan auth admin tetap mengikuti ketentuan lain.
+
 Preview selama encode/upload, ketika upload gagal, serta hasil demo memakai desain cetak lengkap dengan penanda AREA QR non-scannable. Panel hijau lama pada seed diganti sebelum preview ditampilkan. Komposisi mentah untuk request/retry disimpan terpisah dalam memori; hasil Drive menggantikan preview dengan PNG final ber-QR setelah penyimpanan berhasil. Tidak ada request tambahan hanya untuk preview.
 
 Preview pilih frame, kartu admin dan preview builder kini menampilkan proporsi/desain hasil lengkap, termasuk penanda non-scannable AREA QR. Tidak ada link/QR palsu sebelum folder sesi tersedia. PNG hasil, video MP4 dan QR layar memakai URL folder yang sama; MP4 mengikuti tema frame dan QR tampil sepanjang enam detik. Preview/download MP4 menggunakan byte final yang sama dengan Drive. Tema custom tanpa identitas seed memakai kartu video mint sebagai default.

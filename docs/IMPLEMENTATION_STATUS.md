@@ -1,4 +1,22 @@
-# Implementation status — 23 November 2026
+# Implementation status - 24 November 2026
+
+## Koreksi awal manual, lanjutan otomatis - 24 November 2026
+
+- Kunjungan pertama `/` atau `/booth` memuat template lalu menunggu Buka kamera. Tidak ada getUserMedia sebelum klik. Sesudah hasil selesai, timer QR/Foto lagi menandai transisi satu kali pada history.state, membersihkan media, lalu reload; sesi berikutnya membuka kamera otomatis.
+- Penanda hanya boolean nonpersonal, dikonsumsi sesudah template siap. Tidak menyimpan foto/QR/URL hasil ke history, cookie atau Web Storage. Refresh biasa kembali manual. Retry konfigurasi sebelum ada hasil tidak mengaktifkan kamera otomatis. Izin browser dan fallback kamera tetap berlaku.
+- Teks bantuan, spesifikasi flow dan DEPLOY diperbarui. Regresi membuktikan jumlah permintaan kamera nol pada awal/refresh biasa, satu pada reload setelah QR, serta template admin terbaru tetap diterapkan. PASS: 28/28 E2E Chromium dalam satu run (termasuk sembilan viewport tanpa scroll), 67 unit/integration dalam dua batch lengkap (52 + 15), lint, format, typecheck dan production build. Kamera tetap meminta izin browser bila diperlukan. Perubahan lokal, belum deploy dan tidak melakukan upload Drive riil.
+
+## Riwayat 24 November 2026 - kamera langsung dan template aktif admin
+
+- Halaman `/` dan `/booth` langsung menyiapkan template acara tanpa pemilihan frame oleh peserta. Navbar publik dihapus, bantuan/privasi footer tetap tersedia.
+- Pengaturan JSON Drive ditambah `activeFrameId` nullable dengan kompatibilitas file lama. Admin memilih dari template published; draft tidak boleh diaktifkan. Default konfigurasi lama memakai template published pertama. Jika pilihan eksplisit di-unpublish/arsip, booth berhenti dengan error agar operator mengganti pilihan.
+- Kamera dibuka otomatis sesudah overlay siap. Browser tetap dapat meminta izin kamera; tombol Buka kamera menjadi fallback ketika izin/perangkat gagal. Countdown tetap dipicu peserta.
+- Timer QR dan tombol sesi baru membersihkan media lalu memuat ulang halaman; sesi baru mengambil pengaturan terbaru dan membuka kamera kembali. Perubahan admin diambil pada page load berikutnya, sesi yang sudah mengambil snapshot tetap utuh. URL guest tidak dapat memilih frame. Tidak mendeteksi scan HP; timer/Foto lagi yang memicu reload.
+
+- File implementasi: `kiosk-settings.ts`, repository settings, public settings API, `AdminSettings`/dashboard, `Booth`, entry `/` dan `/booth`, header/help/metadata. Tidak menambah dependency, database, credential atau endpoint mutasi publik. API contract, CODEX_PROMPT, README, UI/arsitektur/operasi/testing dan DEPLOY diperbarui dengan prioritas alur terbaru.
+- Chromium memverifikasi **28 skenario unik**. Run lengkap 27 skenario: 25 PASS, dua perlu diulang (Mint terganggu Fast Refresh saat source/build berubah; fixture Vintage belum memilih template Vintage). Ulang terarah Mint, Vintage dan timer pergantian ke Mint PASS. Skenario baru konfigurasi belum tersedia + auto-camera ditolak/manual retry juga PASS setelah fixture kegagalan dibuat stabil terhadap double effect development. Sembilan viewport 320x568 hingga 1920x1080 tetap tanpa scroll; admin memilih template dan guest mengabaikan query frame, auth, retry upload, PNG/MP4/QR, timer, cleanup dan reduced-motion tetap terverifikasi.
+- **67 unit/integration tests** PASS dalam dua batch lengkap (52 + 15), termasuk migrasi JSON lama, persistensi pilihan, update durasi mempertahankan pilihan, draft/UUID ditolak tanpa menaikkan revision, ACL/publikasi template dan encode/stamp/decode video. Lint, format, typecheck dan production build akhir PASS.
+- QA visual kamera langsung mobile diperiksa dengan media sintetis di `.qa/` ignored; navbar/galeri sudah tidak ada. Perubahan hanya lokal, belum deploy dan tidak mengunggah foto ke Drive riil. Operator: publish template -> Pengaturan antrean booth -> Template aktif booth -> Simpan pengaturan, lalu buka/reload booth dan izinkan kamera.
 
 ## Koreksi preview proses penyimpanan - selesai
 

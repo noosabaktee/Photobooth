@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: `${eventIdentity.name} | ${eventIdentity.company}`,
     template: `%s · ${eventIdentity.name}`,
   },
-  description: `Photobooth ${eventIdentity.name}, ${eventIdentity.company}. Ajak rekan satu tim, pilih frame, dan abadikan keseruan bersama.`,
+  description: `Photobooth ${eventIdentity.name}, ${eventIdentity.company}. Ajak rekan satu tim, langsung berpose, dan abadikan keseruan bersama.`,
   icons: { icon: "/event-icon.svg" },
 };
 export default function RootLayout({

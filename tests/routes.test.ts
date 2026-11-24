@@ -28,6 +28,8 @@ import {
   PUT as updateSettings,
 } from "@/app/api/admin/settings/route";
 import { GET as publicSettings } from "@/app/api/settings/route";
+import { repository, backend } from "@/lib/storage";
+import { SettingsRepository } from "@/lib/storage/settings";
 import { POST as adminPreview } from "@/app/api/admin/preview/route";
 import seeds from "../examples/starter-frames/starter-frames.json";
 
@@ -108,7 +110,10 @@ const json = (path: string, body: unknown, origin = "http://localhost:3000") =>
 it("settings writes require admin, allowed origin, valid bounds and current revision", async () => {
   expect((await adminSettings()).status).toBe(401);
   expect((await updateSettings(json("/", {}))).status).toBe(401);
-  expect(await (await publicSettings()).json()).toEqual({ scanSeconds: 15 });
+  expect(await (await publicSettings()).json()).toMatchObject({
+    scanSeconds: 15,
+    frame: { name: expect.any(String) },
+  });
   jar.set(SESSION_COOKIE, await signSession());
   expect(
     (await updateSettings(json("/", {}, "https://evil.test"))).status,
@@ -124,11 +129,66 @@ it("settings writes require admin, allowed origin, valid bounds and current revi
   expect(await saved.json()).toMatchObject({
     settings: { scanSeconds: 25, revision: 1 },
   });
-  expect(await (await publicSettings()).json()).toEqual({ scanSeconds: 25 });
+  expect(await (await publicSettings()).json()).toMatchObject({
+    scanSeconds: 25,
+    frame: { name: expect.any(String) },
+  });
   expect(
     (await updateSettings(json("/", { scanSeconds: 30, expectedRevision: 0 })))
       .status,
   ).toBe(409);
+});
+it("active template settings return only published public data and stop when the selected template is unpublished", async () => {
+  const repo = await repository();
+  const frame = (await repo.list())[1];
+  const settings = new SettingsRepository(await backend());
+  jar.set(SESSION_COOKIE, await signSession());
+  const current = await settings.get();
+  const saved = await updateSettings(
+    json("/", {
+      scanSeconds: 15,
+      expectedRevision: current.revision,
+      activeFrameId: frame.id,
+    }),
+  );
+  expect(saved.status).toBe(200);
+  const response = await publicSettings();
+  const body = await response.json();
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
+  expect(body.frame).toMatchObject({ id: frame.id, name: frame.name });
+  expect(body.frame).not.toHaveProperty("overlay");
+  expect(body.frame).not.toHaveProperty("status");
+  const draft = await repo.status(frame.id, "draft", frame.revision);
+  expect((await publicSettings()).status).toBe(503);
+  const revision = (await settings.get()).revision;
+  expect(
+    (
+      await updateSettings(
+        json("/", {
+          scanSeconds: 15,
+          expectedRevision: revision,
+          activeFrameId: frame.id,
+        }),
+      )
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await updateSettings(
+        json("/", {
+          scanSeconds: 15,
+          expectedRevision: revision,
+          activeFrameId: "bad-id",
+        }),
+      )
+    ).status,
+  ).toBe(400);
+  await repo.status(frame.id, "published", draft.revision);
+  await settings.save({
+    expectedRevision: revision,
+    scanSeconds: 15,
+    activeFrameId: null,
+  });
 });
 it("protects every admin read/mutation and never returns drafts publicly", async () => {
   const context = {

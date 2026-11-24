@@ -1,4 +1,12 @@
-`# Deployment KMI Photobooth
+# Deployment KMI Photobooth
+
+## Alur booth terbaru (24 November 2026)
+
+Setelah deploy, login `/admin`, publish template yang diinginkan, lalu di **Pengaturan antrean booth** pilih **Template aktif booth**, atur durasi QR, dan klik **Simpan pengaturan**. Daftar admin tetap menyimpan banyak template. Pilihan disimpan di `frames/kiosk-settings.json` privat Drive (mock: memori); file lama tetap kompatibel. Jika belum dipilih/null, template published pertama digunakan. Jika template yang dipilih di-unpublish/arsip, pilih penggantinya di admin.
+
+Buka `/` atau `/booth`: langsung layar ambil foto tanpa pemilihan frame/nav atas; pada awal penggunaan peserta menekan **Buka kamera**. Beri izin kamera sekali sesuai kebijakan browser; setelah kamera siap peserta cukup **Mulai countdown**. Setelah QR tampil selama durasi admin, halaman reload dan kamera otomatis dibuka untuk peserta berikutnya. Reload mengambil pilihan template terbaru dan menghapus foto/QR memori, tidak menghapus file Drive. Tidak mendeteksi scan HP; reset mengikuti timer atau tombol Foto lagi. Izin browser/perangkat yang menolak auto-camera tetap memerlukan tombol Buka kamera sebagai retry.
+
+Smoke sebelum event: pilih template A di admin, buka booth dan pastikan nama template A/kamera siap; simpan B saat satu sesi berjalan (sesi A tetap utuh), tunggu QR/timer, pastikan halaman reload, hasil lama hilang dan kamera sesi berikutnya memakai B. Cek HP/desktop tanpa scroll, fallback izin kamera, error jaringan, dan QR PNG/MP4 membuka folder yang sama. Tidak perlu credential/env baru atau seed ulang. Ketentuan ini menggantikan langkah lama pilih frame/reset ke galeri di bawah.
 
 Panduan menjalankan Hoya-Hoya Days Photobooth pada Ubuntu/Debian menggunakan Node.js, systemd, dan Nginx. Semua perintah di bawah dijalankan pada **server Linux**, bukan PowerShell Windows.
 

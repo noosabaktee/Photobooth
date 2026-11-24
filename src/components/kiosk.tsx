@@ -9,7 +9,7 @@ import {
   Pause,
   Camera,
   ScanLine,
-  Layers,
+  Timer,
 } from "lucide-react";
 import { Privacy } from "./shared";
 import { Button } from "./ui/button";
@@ -114,11 +114,14 @@ export function KioskFooter() {
         <ol className="help-steps">
           <li>
             <span>
-              <Layers size={22} />
+              <Timer size={22} />
             </span>
             <div>
-              <strong>Pilih frame favorit</strong>
-              <p>Ketuk langsung gambar frame yang kamu suka.</p>
+              <strong>Mulai dari Buka kamera</strong>
+              <p>
+                Template sudah disiapkan pengelola. Ketuk Buka kamera pada awal
+                penggunaan. Sesi berikutnya membuka kamera otomatis.
+              </p>
             </div>
           </li>
           <li>

@@ -2,12 +2,15 @@ import type { Page } from "@playwright/test";
 import { printPhoto } from "../src/lib/print-photo";
 import { printLayoutSchema } from "../src/lib/print-layout";
 import { stampVideo } from "../src/lib/video-server";
+import { installActiveFrame } from "./camera-helper";
 
 // Test-only Drive response, never makes a Google network call.
-export async function installResultFixture(page: Page, scanSeconds = 120) {
-  await page.route("**/api/settings", (route) =>
-    route.fulfill({ json: { scanSeconds } }),
-  );
+export async function installResultFixture(
+  page: Page,
+  scanSeconds = 120,
+  frameName = "Pink Gingham",
+) {
+  await installActiveFrame(page, frameName, scanSeconds);
   await page.route("**/api/photos", async (route) => {
     const request = route.request();
     const form = await new Response(new Uint8Array(request.postDataBuffer()!), {

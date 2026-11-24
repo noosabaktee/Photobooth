@@ -17,13 +17,6 @@ export function Header() {
           <span>{eventIdentity.company}</span>
         </span>
       </Link>
-      <nav aria-label="Navigasi utama">
-        <Link href="/?view=how">Cara main</Link>
-        <Link href="/?view=frames">Koleksi frame</Link>
-        <Link className="nav-booth" href="/booth">
-          Masuk booth <ArrowUpRight size={16} />
-        </Link>
-      </nav>
     </header>
   );
 }

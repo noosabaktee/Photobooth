@@ -1,5 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
-import { installCamera, takePhotos } from "./camera-helper";
+import {
+  installCamera,
+  takePhotos,
+  installActiveFrame,
+  readyCamera,
+} from "./camera-helper";
 import { installResultFixture } from "./result-helper";
 async function fits(page: Page) {
   const report = await page.evaluate(() => {
@@ -91,18 +96,14 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await page.goto("/");
     await expect(
-      page.getByRole("link", { name: /Mulai foto bareng/ }),
-    ).toBeVisible();
+      page.getByRole("button", { name: "Buka kamera", exact: true }),
+    ).toBeEnabled();
     await fits(page);
-    await page.getByRole("link", { name: "Cara main", exact: true }).click();
+    await readyCamera(page);
     await expect(
-      page.getByRole("heading", { name: /Tiga langkah/ }),
-    ).toBeVisible();
-    await fits(page);
-    await page
-      .getByRole("link", { name: "Koleksi frame", exact: true })
-      .click();
-    await expect(page.getByAltText("Preview Pink Gingham")).toBeVisible();
+      page.getByRole("button", { name: "Mulai countdown", exact: true }),
+    ).toBeEnabled();
+    await expect(page.locator(".site-header, .gallery-panel")).toHaveCount(0);
     await fits(page);
     await page.getByRole("button", { name: "Privasi foto" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -110,16 +111,6 @@ for (const viewport of [
     await expect(
       page.getByRole("button", { name: "Privasi foto" }),
     ).toBeFocused();
-    await page.goto("/booth");
-    await expect(
-      page.getByRole("button", { name: "Pilih Pink Gingham" }),
-    ).toBeVisible();
-    await fits(page);
-    await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
-    await expect(
-      page.getByRole("button", { name: "Buka kamera" }),
-    ).toBeVisible();
-    await fits(page);
     await expect(page.locator(".capture-thumbs > div")).toHaveCount(3);
     await page.screenshot({
       path: `.qa/kiosk-camera-${viewport.width}x${viewport.height}.png`,
@@ -139,7 +130,7 @@ for (const viewport of [
     ).toBeVisible();
     await page.getByRole("button", { name: "Ya, mulai sesi baru" }).click();
     await expect(
-      page.getByRole("button", { name: "Pilih Pink Gingham" }),
+      page.getByRole("button", { name: "Mulai countdown", exact: true }),
     ).toBeVisible();
     await fits(page);
   });
@@ -157,7 +148,7 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await installResultFixture(page);
     await page.goto("/booth");
-    await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
+
     await takePhotos(page);
     await expect(
       page.getByAltText("QR folder Google Drive kolase dan video"),
@@ -168,14 +159,18 @@ for (const viewport of [
     });
   });
 }
-test("three-photo Mint frame, pagination and resize keep controls reachable", async ({
+test("admin-selected Mint frame and resize keep controls reachable", async ({
   page,
 }) => {
   await installCamera(page);
+  await installActiveFrame(page, "Mint Party");
   await page.setViewportSize({ width: 360, height: 640 });
   await page.goto("/booth");
-  await page.getByRole("button", { name: "Frame berikutnya" }).click();
-  await page.getByRole("button", { name: "Pilih Mint Party" }).click();
+  await readyCamera(page);
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toBeEnabled();
+
   await fits(page);
   await takePhotos(page);
   await expect(page.locator(".filter-options, .retake-grid")).toHaveCount(0);

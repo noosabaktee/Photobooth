@@ -6,12 +6,14 @@ export const kioskSettingsSchema = z
     schemaVersion: z.literal(1),
     revision: z.number().int().nonnegative(),
     scanSeconds: scanSecondsSchema,
+    activeFrameId: z.uuid().nullable().default(null),
   })
   .strict();
 export const kioskSettingsUpdateSchema = z
   .object({
     expectedRevision: z.number().int().nonnegative(),
     scanSeconds: scanSecondsSchema,
+    activeFrameId: z.uuid().nullable().optional(),
   })
   .strict();
 export type KioskSettings = z.infer<typeof kioskSettingsSchema>;
@@ -19,4 +21,5 @@ export const DEFAULT_KIOSK_SETTINGS: KioskSettings = {
   schemaVersion: 1,
   revision: 0,
   scanSeconds: 15,
+  activeFrameId: null,
 };

@@ -1,5 +1,14 @@
 # MASTER PROMPT UNTUK CODEX — DIGITAL PHOTOBOOTH
 
+## Alur aktif event - 24 November 2026
+
+Peserta membuka `/` atau `/booth` dan langsung masuk layar ambil foto tanpa landing, galeri pilihan frame atau navbar atas. Booth mengambil template aktif dan durasi scan dari `GET /api/settings`, memuat snapshot overlay, lalu menunggu peserta menekan **Buka kamera** pada kunjungan pertama. Kamera hanya otomatis terbuka pada reload lanjutan setelah hasil sesi selesai (timer QR atau Foto lagi). Refresh biasa kembali menunggu Buka kamera. Izin kamera browser tetap diperlukan; Buka kamera tersedia sebagai retry jika perangkat/izin gagal. Peserta menekan **Mulai countdown**. Setelah foto terakhir, PNG + MP4 disimpan otomatis dan QR tampil. Sesudah timer admin habis (default 15 detik), media dibersihkan dan **halaman dimuat ulang**, kamera terbuka untuk peserta berikutnya. Browser tidak dapat mendeteksi apakah QR telah dipindai; pergantian peserta mengikuti timer atau tombol Foto lagi.
+
+Admin tetap menyimpan banyak template dan memilih **Template aktif booth** pada Pengaturan antrean booth, lalu **Simpan pengaturan**. Hanya template published boleh dipilih. `activeFrameId` disimpan bersama durasi dalam JSON privat Drive; tanpa database. Konfigurasi lama/null memakai template published pertama sebagai fallback eksplisit. Template aktif yang di-unpublish/arsip tidak diganti diam-diam: booth meminta operator memilih pengganti. Perubahan berlaku pada halaman/sesi berikutnya, tidak mengganti snapshot sesi yang sedang berlangsung. URL `?frame=...` dari peserta tidak memilih template.
+
+Spesifikasi alur di bagian ini menggantikan ketentuan landing/pilih frame/reset ke galeri pada bagian lama di bawah. Preview/loading/error/final, QR PNG/MP4, privasi memori, dan auth admin tetap mengikuti ketentuan lain.
+
+
 ## 0. Peran dan misi
 
 **Revisi event 23 November 2026 (menggantikan alur guest review/edit/upload manual di bawah):** Buka kamera langsung tanpa checkbox konfirmasi → tiga foto dari frame bawaan → kolase natural dan MP4 otomatis disimpan → QR folder tampil → reset browser otomatis sesudah default 15 detik. Informasi privasi tersedia di footer dan izin kamera browser tetap berlaku. Tidak ada panel nuansa atau retake guest pada alur antrean. Admin mengatur durasi scan 5–300 detik melalui JSON privat di Drive, tanpa database. Area QR cetak melanjutkan warna/sisi footer frame, dengan area tenang kontras; tiga foto tidak ditutup atau digeser. PNG yang disimpan dan ditampilkan/diunduh sama persis. Timer dimulai setelah QR terlihat, tidak berjalan pada kegagalan upload, dan tidak menghapus hasil Drive. Lihat README, kontrak API dan operations untuk implementasi terbaru.

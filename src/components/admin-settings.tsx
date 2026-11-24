@@ -3,9 +3,15 @@ import { useEffect, useState } from "react";
 import { Timer } from "lucide-react";
 import { Button } from "./ui/button";
 import { requestJson } from "@/lib/client";
+import type { Frame } from "@/lib/schema";
 import type { KioskSettings } from "@/lib/kiosk-settings";
 
-export function AdminSettings() {
+export function AdminSettings({
+  frames,
+}: {
+  frames: Pick<Frame, "id" | "name" | "status">[];
+}) {
+  const [activeFrame, setActiveFrame] = useState("");
   const [settings, setSettings] = useState<KioskSettings | null>(null);
   const [seconds, setSeconds] = useState("15");
   const [busy, setBusy] = useState(false);
@@ -19,6 +25,7 @@ export function AdminSettings() {
         "/api/admin/settings",
       );
       setSettings(response.settings);
+      setActiveFrame(response.settings.activeFrameId || "");
       setSeconds(String(response.settings.scanSeconds));
     } catch (e) {
       setError((e as Error).message);
@@ -32,6 +39,7 @@ export function AdminSettings() {
       .then((r) => {
         if (active) {
           setSettings(r.settings);
+          setActiveFrame(r.settings.activeFrameId || "");
           setSeconds(String(r.settings.scanSeconds));
         }
       })
@@ -50,8 +58,8 @@ export function AdminSettings() {
         </h2>
         <p>
           Setelah foto terakhir, hasil otomatis dikirim ke Drive. Durasi dimulai
-          setelah QR tampil; lalu layar kembali ke pilih frame. Berlaku pada
-          sesi baru.
+          setelah QR tampil; lalu halaman dimuat ulang dan kamera terbuka untuk
+          peserta berikutnya. Berlaku pada sesi baru.
         </p>
       </div>
       <form
@@ -66,19 +74,49 @@ export function AdminSettings() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               scanSeconds: Number(seconds),
+              activeFrameId: activeFrame || null,
               expectedRevision: settings.revision,
             }),
           })
             .then((r) => {
               setSettings(r.settings);
+              setActiveFrame(r.settings.activeFrameId || "");
               setNotice(
-                `Durasi scan disimpan: ${r.settings.scanSeconds} detik.`,
+                `Pengaturan booth disimpan. Durasi scan: ${r.settings.scanSeconds} detik.`,
               );
             })
             .catch((e) => setError(e.message))
             .finally(() => setBusy(false));
         }}
       >
+        <label className="field">
+          Template aktif booth
+          <select
+            value={activeFrame}
+            disabled={!settings || busy}
+            onChange={(e) => {
+              setActiveFrame(e.target.value);
+              setNotice("");
+            }}
+          >
+            <option value="">Otomatis: template published pertama</option>
+            {activeFrame &&
+              !frames.some(
+                (f) => f.id === activeFrame && f.status === "published",
+              ) && (
+                <option value={activeFrame}>
+                  Template aktif tidak tersedia; pilih pengganti
+                </option>
+              )}
+            {frames
+              .filter((f) => f.status === "published")
+              .map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+          </select>
+        </label>
         <label className="field">
           Durasi scan QR (detik)
           <input
@@ -96,7 +134,7 @@ export function AdminSettings() {
           />
         </label>
         <Button disabled={!settings || busy}>
-          {busy ? "Menyimpan…" : "Simpan durasi"}
+          {busy ? "Menyimpan…" : "Simpan pengaturan"}
         </Button>
         <Button
           type="button"

@@ -5,6 +5,7 @@ import {
   kioskSettingsUpdateSchema,
 } from "../kiosk-settings";
 import { fail } from "../errors";
+import { FrameRepository } from "./repository";
 
 const filename = "kiosk-settings.json";
 let writes: Promise<unknown> = Promise.resolve();
@@ -40,6 +41,7 @@ export class SettingsRepository {
   private async write(input: {
     expectedRevision: number;
     scanSeconds: number;
+    activeFrameId?: string | null;
   }) {
     const current = await this.entry();
     if (input.expectedRevision !== current.settings.revision)
@@ -48,10 +50,16 @@ export class SettingsRepository {
         "REVISION_CONFLICT",
         "Pengaturan berubah. Muat ulang sebelum menyimpan.",
       );
+    const activeFrameId =
+      input.activeFrameId === undefined
+        ? current.settings.activeFrameId
+        : input.activeFrameId;
+    if (activeFrameId) await new FrameRepository(this.store).get(activeFrameId);
     const settings = kioskSettingsSchema.parse({
       schemaVersion: 1,
       revision: current.settings.revision + 1,
       scanSeconds: input.scanSeconds,
+      activeFrameId,
     });
     const bytes = Buffer.from(JSON.stringify(settings));
     if (current.fileId) await this.store.update(current.fileId, bytes);

@@ -4,6 +4,7 @@ import { installCamera, takePhotos } from "./camera-helper";
 test("self-service help supports keyboard and motion follows guest preferences", async ({
   page,
 }) => {
+  await installCamera(page);
   await page.goto("/");
   const help = page.getByRole("button", { name: "Cara pakai" });
   await help.focus();
@@ -33,28 +34,22 @@ test("self-service help supports keyboard and motion follows guest preferences",
     "data-kiosk-motion",
     "off",
   );
-  await expect(page.locator(".paper-strip").first()).toHaveCSS(
-    "animation-name",
-    "none",
-  );
+  await expect(
+    page.getByRole("button", { name: "Aktifkan animasi" }),
+  ).toHaveAttribute("aria-pressed", "false");
   await page.getByRole("button", { name: "Aktifkan animasi" }).click();
-  await expect(page.locator(".paper-strip").first()).toHaveCSS(
-    "animation-name",
-    "service-float",
-  );
+  await expect(
+    page.getByRole("button", { name: "Nonaktifkan animasi" }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(
     page.getByRole("button", {
       name: "Animasi mengikuti pengaturan perangkat",
     }),
   ).toBeDisabled();
-  await expect(page.locator(".paper-strip").first()).toHaveCSS(
-    "animation-name",
-    "none",
-  );
-  await page.getByRole("link", { name: /Mulai foto bareng/ }).click();
+  await expect(page.locator(".site-header, .gallery-panel")).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Pilih Pink Gingham" }),
+    page.getByRole("button", { name: "Buka kamera", exact: true }),
   ).toBeVisible();
 });
 
@@ -64,7 +59,6 @@ test("canceling next guest preserves the result; confirming clears the session",
   await installCamera(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/booth");
-  await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
   await takePhotos(page);
   await expect(
     page.getByRole("heading", { name: /Demo selesai/ }),
@@ -83,7 +77,7 @@ test("canceling next guest preserves the result; confirming clears the session",
   await page.getByRole("button", { name: "Foto lagi", exact: true }).click();
   await page.getByRole("button", { name: "Ya, mulai sesi baru" }).click();
   await expect(
-    page.getByRole("button", { name: "Pilih Pink Gingham" }),
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
   ).toBeVisible();
   await expect(photo).toHaveCount(0);
   await expect(page.locator(".qr, .video-preview")).toHaveCount(0);

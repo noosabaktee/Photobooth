@@ -19,11 +19,13 @@ Status codes: 200 GET/update, 201 create, 204 delete, 400 bad input, 401 auth re
 
 ### `GET /api/settings`
 
-Mengembalikan hanya `{ "scanSeconds": 15 }`, `Cache-Control: no-store`. Dibaca lagi saat frame dipilih. Default 15 jika JSON konfigurasi belum ada; kegagalan baca/konfigurasi tidak valid menghasilkan error, bukan default diam-diam. Tidak mengekspos file ID atau metadata admin.
+Mengembalikan `{ "scanSeconds": 15, "frame": PublicFrame }`, `Cache-Control: no-store`, tanpa auth guest. Frame hanya template aktif published dengan URL asset proxy; tidak mengekspos ID file Drive/draft/metadata admin. Dibaca setiap page load (termasuk reload setelah timer QR). Konfigurasi lama/null memilih template published pertama; tidak ada frame atau pilihan eksplisit yang tidak lagi published menghasilkan 503 `NO_ACTIVE_FRAME`. URL guest tidak dapat mengganti pilihan admin. Default durasi 15 jika JSON belum ada; error baca/konfigurasi tetap transparan.
 
 ### `GET /api/admin/settings` dan `PUT /api/admin/settings`
 
-Keduanya memerlukan signed admin cookie. GET mengembalikan `{ "settings": { "schemaVersion": 1, "revision": 0, "scanSeconds": 15 } }`. PUT memerlukan origin valid, JSON dibatasi 64 KiB, throttle dan body strict `{ "expectedRevision": 0, "scanSeconds": 15 }`; durasi integer 5–300. Mengembalikan settings dengan revision naik satu; revisi basi 409. Tersimpan sebagai `kiosk-settings.json` privat dalam folder frames, mock di memori. Serialisasi write hanya dalam satu proses; tidak menjanjikan CAS lintas instance. Tidak ada endpoint public write.
+Keduanya memerlukan signed admin cookie. GET mengembalikan `{ "settings": { "schemaVersion": 1, "revision": 0, "scanSeconds": 15, "activeFrameId": null } }`. PUT memerlukan origin valid, JSON dibatasi 64 KiB, throttle dan body strict `{ "expectedRevision": 0, "scanSeconds": 15, "activeFrameId": "UUID-frame-published" }`; durasi integer 5–300. Mengembalikan settings dengan revision naik satu; revisi basi 409. Tersimpan sebagai `kiosk-settings.json` privat dalam folder frames, mock di memori. Serialisasi write hanya dalam satu proses; tidak menjanjikan CAS lintas instance. Tidak ada endpoint public write.
+
+Untuk PUT settings, `activeFrameId` menerima UUID template published atau `null` (template published pertama). Field yang dihilangkan mempertahankan pilihan sebelumnya agar update durasi lama kompatibel. UUID rusak ditolak 400; template hilang/draft ditolak 404. File settings lama tanpa field ini dibaca sebagai null. Metadata template aktif yang disajikan ke guest tetap berupa `PublicFrame`, tanpa ID file Drive.
 
 ### `GET /api/frames`
 

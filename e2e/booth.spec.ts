@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { installCamera, takePhotos } from "./camera-helper";
+import {
+  installCamera,
+  takePhotos,
+  installActiveFrame,
+  readyCamera,
+} from "./camera-helper";
 import { installResultFixture } from "./result-helper";
 import sharp from "sharp";
 import jsQR from "jsqr";
@@ -24,6 +29,7 @@ for (const seed of seeds.frames) {
     page,
   }) => {
     await installCamera(page);
+    await installActiveFrame(page, seed.name);
     // Reproduce an already-published Drive overlay with the old green signature.
     const photoBottom = Math.ceil(
       Math.max(...seed.slots.map((s) => s.y + s.height)) *
@@ -80,8 +86,11 @@ for (const seed of seeds.frames) {
       }
     });
     await page.goto("/booth");
-    await page.getByRole("button", { name: `Pilih ${seed.name}` }).click();
-    await page.getByRole("button", { name: "Buka kamera" }).click();
+    await readyCamera(page);
+
+    await expect(
+      page.getByRole("button", { name: "Mulai countdown", exact: true }),
+    ).toBeEnabled();
     await page.getByRole("button", { name: "Mulai countdown" }).click();
     const form = await request;
     const pending = page.locator(".auto-upload-preview");
@@ -168,10 +177,23 @@ test("guest opens camera directly then three photos auto-upload once, with natur
   await installCamera(page);
   await page.goto("/");
   await expect(page).toHaveTitle("Hoya-Hoya Days | Kalbe Morinaga Indonesia");
-  await page.screenshot({ path: ".qa/landing-desktop.png" });
-  await page.getByRole("link", { name: /Mulai foto bareng/ }).click();
-  await page.getByAltText("Preview Pink Gingham").click();
-  await expect(page.getByRole("button", { name: "Buka kamera" })).toBeEnabled();
+  await expect(
+    page.getByRole("navigation", { name: "Navigasi utama" }),
+  ).toHaveCount(0);
+  await expect(page.locator(".gallery-panel")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Buka kamera", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { testCameraCalls: number }).testCameraCalls,
+    ),
+  ).toBe(0);
+  await page.screenshot({ path: ".qa/first-visit-camera-closed.png" });
+  await readyCamera(page);
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toBeEnabled();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   let uploads = 0;
   let encodes = 0;
@@ -222,10 +244,16 @@ test("guest opens camera directly then three photos auto-upload once, with natur
   const png = page.waitForEvent("download");
   await page.getByRole("button", { name: "PNG", exact: true }).click();
   expect((await png).suggestedFilename()).toBe("hoya-hoya-days-kmi.png");
+  await page.unroute("**/api/frames/**/asset/overlay?*");
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Pilih Pink Gingham" }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Buka kamera", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { testCameraCalls: number }).testCameraCalls,
+    ),
+  ).toBe(0);
   expect(errors).toEqual([]);
 });
 
@@ -285,8 +313,11 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
     };
   });
   await page.goto("/booth");
-  await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
-  await page.getByRole("button", { name: "Buka kamera" }).click();
+  await readyCamera(page);
+
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: "Mulai countdown" }).click();
   await expect(page.locator(".service-countdown")).toBeVisible();
   await expect(page.locator(".service-countdown .sr-only")).toContainText(
@@ -315,7 +346,11 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
   ).toBe(true);
   await page.getByRole("button", { name: "Foto lagi", exact: true }).click();
   await page.getByRole("button", { name: "Ya, mulai sesi baru" }).click();
-  await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
   await page.evaluate(() => {
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
       value: async () => {
@@ -338,7 +373,7 @@ test("upload failure preserves media and does not start reset timer; retry reuse
 }) => {
   await installCamera(page);
   await page.goto("/booth");
-  await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
+
   let uploads = 0;
   let encodes = 0;
   await page.route("**/api/boomerang", async (route) => {
@@ -354,7 +389,10 @@ test("upload failure preserves media and does not start reset timer; retry reuse
       });
     else await route.continue();
   });
-  await page.getByRole("button", { name: "Buka kamera" }).click();
+  await readyCamera(page);
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: "Mulai countdown" }).click();
   await expect(
     page.getByRole("button", { name: "Coba simpan lagi" }),
@@ -383,7 +421,7 @@ test("verified QR and printed PNG match; timer starts on QR display and resets a
   await installCamera(page);
   await installResultFixture(page, 15);
   await page.goto("/booth");
-  await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
+
   await takePhotos(page);
   await expect(
     page.getByAltText("QR folder Google Drive kolase dan video"),
@@ -406,28 +444,55 @@ test("verified QR and printed PNG match; timer starts on QR display and resets a
     "https://drive.google.com/drive/folders/test-only-layout-id",
   );
   await page.screenshot({ path: ".qa/auto-qr-result.png" });
+  // Operator changes the next session, while the current captured snapshot stays intact.
+  await installActiveFrame(page, "Mint Party", 15);
   await page.clock.fastForward(14000);
   await expect(photo).toBeVisible();
+  const reloaded = page.waitForEvent(
+    "framenavigated",
+    (f) => f === page.mainFrame(),
+  );
   await page.clock.fastForward(1500);
+  await reloaded;
+  await page.clock.resume();
   await expect(
-    page.getByRole("button", { name: "Pilih Pink Gingham" }),
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
   ).toBeVisible();
   await expect(photo).toHaveCount(0);
   await expect(page.locator(".qr")).toHaveCount(0);
+  await expect(
+    page.getByText("Template acara: Mint Party.", { exact: false }),
+  ).toBeVisible();
   // Return to the real clock before interacting with the next guest's session.
   await page.clock.resume();
-  await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
+
   await expect(page.getByRole("checkbox")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Buka kamera" })).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { testCameraCalls: number }).testCameraCalls,
+    ),
+  ).toBe(1);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Buka kamera", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { testCameraCalls: number }).testCameraCalls,
+    ),
+  ).toBe(0);
 });
 
 test("Vintage print keeps black film artwork behind the QR, with no green panel", async ({
   page,
 }) => {
   await installCamera(page);
-  await installResultFixture(page);
+  await installResultFixture(page, 120, "Vintage Film");
   await page.goto("/booth");
-  await page.getByRole("button", { name: "Pilih Vintage Film" }).click();
+
   await takePhotos(page);
   const pending = page.waitForEvent("download");
   await page.getByRole("button", { name: "PNG", exact: true }).click();
@@ -494,17 +559,14 @@ for (const theme of [
     page,
   }) => {
     await installCamera(page);
-    await installResultFixture(page);
+    await installResultFixture(page, 120, theme.name);
     await page.goto("/booth");
-    await expect
-      .poll(() =>
-        page
-          .getByAltText("Preview Vintage Film")
-          .evaluate((img) => (img as HTMLImageElement).naturalHeight),
-      )
-      .toBeGreaterThan(1000);
+    await readyCamera(page);
+    await expect(
+      page.getByRole("button", { name: "Mulai countdown", exact: true }),
+    ).toBeEnabled();
     await page.screenshot({ path: `.qa/frame-picker-${theme.slug}.png` });
-    await page.getByRole("button", { name: `Pilih ${theme.name}` }).click();
+
     await takePhotos(page);
     await page.getByRole("button", { name: "Video MP4", exact: true }).click();
     const video = page.getByLabel("Preview video MP4");
@@ -552,7 +614,7 @@ test("QR timer uses a custom admin duration returned by settings", async ({
   await installCamera(page);
   await installResultFixture(page, 5);
   await page.goto("/booth");
-  await page.getByRole("button", { name: "Pilih Pink Gingham" }).click();
+
   await takePhotos(page);
   await expect(
     page.getByAltText("QR folder Google Drive kolase dan video"),
@@ -561,7 +623,59 @@ test("QR timer uses a custom admin duration returned by settings", async ({
   await page.clock.install();
   await page.clock.fastForward(6000);
   await expect(
-    page.getByRole("button", { name: "Pilih Pink Gingham" }),
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".qr")).toHaveCount(0);
+});
+
+test("startup stays manual after unavailable template and recovers from camera permission denial", async ({
+  page,
+}) => {
+  await installCamera(page);
+  await page.addInitScript(() => {
+    const open = navigator.mediaDevices.getUserMedia.bind(
+      navigator.mediaDevices,
+    );
+    let attempts = 0;
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      configurable: true,
+      value: async (constraints: MediaStreamConstraints) => {
+        if (++attempts === 1)
+          throw new DOMException("denied", "NotAllowedError");
+        return open(constraints);
+      },
+    });
+  });
+  let available = false;
+  await page.route("**/api/settings", async (route) => {
+    if (!available)
+      await route.fulfill({
+        status: 503,
+        json: {
+          error: {
+            code: "NO_ACTIVE_FRAME",
+            message: "Belum ada template aktif. Hubungi pengelola.",
+          },
+        },
+      });
+    else await route.continue();
+  });
+  await page.goto("/booth");
+  await expect(
+    page.getByRole("heading", { name: "Booth belum siap" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toHaveCount(0);
+  available = true;
+  await page.getByRole("button", { name: "Coba lagi", exact: true }).click();
+  await page.getByRole("button", { name: "Buka kamera", exact: true }).click();
+  await expect(
+    page.locator(".kiosk-message.is-error [role=alert]"),
+  ).toContainText("Izin kamera ditolak");
+  await page.getByRole("button", { name: "Buka kamera", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Mulai countdown", exact: true }),
+  ).toBeEnabled();
+  await expect(page.locator(".site-header, .gallery-panel")).toHaveCount(0);
 });

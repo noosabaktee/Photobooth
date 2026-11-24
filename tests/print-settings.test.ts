@@ -409,3 +409,59 @@ it("mock never retains session media or adds a fake printable Drive QR", async (
   expect(response).not.toHaveProperty("viewUrl");
   expect(store.files.size).toBe(0);
 });
+
+it("legacy settings gain a default active frame and explicit selection persists, rejects drafts and preserves selection on duration updates", async () => {
+  const store = await MockBackend.seeded();
+  await store.create(
+    "frames",
+    "kiosk-settings.json",
+    "application/json",
+    Buffer.from(
+      JSON.stringify({ schemaVersion: 1, revision: 3, scanSeconds: 20 }),
+    ),
+  );
+  const repo = new SettingsRepository(store);
+  expect(await repo.get()).toMatchObject({
+    activeFrameId: null,
+    scanSeconds: 20,
+    revision: 3,
+  });
+  const frames = new FrameRepository(store);
+  const frame = (await frames.list())[1];
+  await repo.save({
+    expectedRevision: 3,
+    scanSeconds: 25,
+    activeFrameId: frame.id,
+  });
+  expect(await new SettingsRepository(store).get()).toMatchObject({
+    activeFrameId: frame.id,
+    revision: 4,
+  });
+  await repo.save({ expectedRevision: 4, scanSeconds: 15 });
+  expect(await repo.get()).toMatchObject({
+    activeFrameId: frame.id,
+    revision: 5,
+  });
+  await frames.status(frame.id, "draft", frame.revision);
+  await expect(
+    repo.save({
+      expectedRevision: 5,
+      scanSeconds: 15,
+      activeFrameId: frame.id,
+    }),
+  ).rejects.toMatchObject({ status: 404 });
+  await expect(
+    repo.save({
+      expectedRevision: 5,
+      scanSeconds: 15,
+      activeFrameId: "not-an-id",
+    }),
+  ).rejects.toThrow();
+  expect((await repo.get()).revision).toBe(5);
+  await repo.save({
+    expectedRevision: 5,
+    scanSeconds: 15,
+    activeFrameId: null,
+  });
+  expect((await repo.get()).activeFrameId).toBeNull();
+});

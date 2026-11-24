@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
+import { installCamera } from "./camera-helper";
 import manifest from "../examples/starter-frames/starter-frames.json" with { type: "json" };
 test("admin logs in, builds three slots, publishes, edits, unpublishes, archives, logs out", async ({
   page,
@@ -23,20 +24,39 @@ test("admin logs in, builds three slots, publishes, edits, unpublishes, archives
     fullPage: true,
   });
   const scanSeconds = page.getByLabel("Durasi scan QR (detik)");
+  const activeFrame = page.getByLabel("Template aktif booth");
+  await activeFrame.selectOption({ label: "Vintage Film" });
   await expect(scanSeconds).toHaveValue("15");
   await scanSeconds.fill("25");
   await page
-    .getByRole("button", { name: "Simpan durasi", exact: true })
+    .getByRole("button", { name: "Simpan pengaturan", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText("25 detik");
   await page.reload();
   await expect(scanSeconds).toHaveValue("25");
-  expect(await (await page.request.get("/api/settings")).json()).toEqual({
+  await expect(activeFrame.locator("option:checked")).toHaveText(
+    "Vintage Film",
+  );
+  expect(await (await page.request.get("/api/settings")).json()).toMatchObject({
     scanSeconds: 25,
+    frame: { name: "Vintage Film" },
   });
+  // Real admin setting drives a guest session, including attempts to override via URL.
+  const guest = await page.context().newPage();
+  await installCamera(guest);
+  await guest.goto("/booth?frame=ignored-guest-selection");
+  await expect(
+    guest.getByRole("button", { name: "Buka kamera", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    guest.getByText("Template acara: Vintage Film.", { exact: false }),
+  ).toBeVisible();
+  await expect(guest.locator(".site-header, .gallery-panel")).toHaveCount(0);
+  await guest.close();
+  await activeFrame.selectOption("");
   await scanSeconds.fill("15");
   await page
-    .getByRole("button", { name: "Simpan durasi", exact: true })
+    .getByRole("button", { name: "Simpan pengaturan", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText("15 detik");
   await page.getByRole("link", { name: "Add frame" }).click();

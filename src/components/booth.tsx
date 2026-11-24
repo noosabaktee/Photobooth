@@ -1,8 +1,13 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import {
   Camera,
-  ArrowLeft,
   Download,
   Upload,
   Timer,
@@ -13,7 +18,6 @@ import {
   Square,
 } from "lucide-react";
 import QRCode from "qrcode";
-import { Gallery } from "./gallery";
 import { Button } from "./ui/button";
 import { KioskMessage } from "./kiosk";
 import { CaptureCountdown, Celebration, NextGuestButton } from "./self-service";
@@ -42,7 +46,7 @@ type Result =
       videoDataUrl: string;
       files: { fileId: string; filename: string; mimeType: string }[];
     };
-const labels = ["Pilih frame", "Ambil foto", "Simpan otomatis", "Scan QR"];
+const labels = ["Ambil foto", "Simpan otomatis", "Scan QR"];
 export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
   const composition = useRef<{ blob: Blob; url: string } | null>(null);
   const [movie, setMovie] = useState<{ blob: Blob; url: string } | null>(null);
@@ -61,7 +65,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
   const [camera, setCamera] = useState(false),
     [devices, setDevices] = useState<MediaDeviceInfo[]>([]),
     [device, setDevice] = useState(""),
-    [busy, setBusy] = useState(""),
+    [busy, setBusy] = useState("Memuat template booth..."),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const [rendered, setRendered] = useState<{ blob: Blob; url: string } | null>(
@@ -73,8 +77,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     stream = useRef<MediaStream | null>(null),
     sequence = useRef(0),
     urls = useRef(new Set<string>()),
-    uploadLock = useRef(false),
-    selectionLock = useRef(false);
+    uploadLock = useRef(false);
   const network = useRef<AbortController | null>(null);
   const remember = useCallback((blob: Blob) => {
     const url = URL.createObjectURL(blob);
@@ -148,65 +151,60 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
       active = false;
     };
   }, [result]);
-  const select = useCallback(
-    async (selected: PublicFrame) => {
-      if (selectionLock.current) return;
-      selectionLock.current = true;
-      setBusy("Memuat overlay…");
-      setError("");
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    void (async () => {
       try {
-        const settings = await requestJson<{ scanSeconds: number }>(
-          "/api/settings",
-        );
+        const settings = await requestJson<{
+          scanSeconds: number;
+          frame: PublicFrame;
+        }>("/api/settings", { signal: controller.signal });
         const duration = scanSecondsSchema.parse(settings.scanSeconds);
+        const selected = settings.frame;
         const response = await fetch(selected.overlayUrl, {
           cache: "no-store",
+          signal: controller.signal,
         });
         if (!response.ok)
-          throw new Error("Frame berubah atau jaringan terputus. Pilih lagi.");
+          throw new Error(
+            "Template tidak dapat dimuat. Hubungi pengelola atau coba lagi.",
+          );
         const blob = await response.blob();
         const url = remember(blob);
         await loadImage(url);
+        if (!active) {
+          URL.revokeObjectURL(url);
+          return;
+        }
         setScanSeconds(duration);
         setRemaining(duration);
-        setQrReady(false);
         setOverlay(url);
         setFrame(selected);
-        setShot(0);
-        setPhotos([]);
         setStep(1);
-        setRendered(null);
-        composition.current = null;
-        setMovie(null);
-        setPreview("photo");
-        setResult(null);
       } catch (e) {
-        setError((e as Error).message);
-      } finally {
-        selectionLock.current = false;
-        setBusy("");
-      }
-    },
-    [remember],
-  );
-  // Landing frame links preserve selection intent without persisting any photo/session data.
-  useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("frame");
-    if (!id) return;
-    let active = true;
-    void requestJson<{ frame: PublicFrame }>(
-      `/api/frames/${encodeURIComponent(id)}`,
-    )
-      .then((r) => {
-        if (active) void select(r.frame);
-      })
-      .catch((e) => {
         if (active) setError((e as Error).message);
-      });
+      } finally {
+        if (active) setBusy("");
+      }
+    })();
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [select]);
+  }, [remember]);
+  const autoOpenCamera = useEffectEvent(() => {
+    void openCamera();
+  });
+  useEffect(() => {
+    if (!frame || window.history.state?.photoboothNextGuest !== true) return;
+    // A one-shot continuation of a completed session, never photo/QR storage.
+    window.history.replaceState(
+      { ...window.history.state, photoboothNextGuest: false },
+      "",
+    );
+    autoOpenCamera();
+  }, [frame]);
   async function openCamera(deviceId = device) {
     if (busy) return;
     stop();
@@ -469,7 +467,12 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     setStep(0);
     setError("");
     setNotice("");
-    window.history.replaceState(null, "", "/booth");
+    window.history.replaceState(
+      { ...window.history.state, photoboothNextGuest: step === 3 },
+      "",
+      "/booth",
+    );
+    window.location.reload();
   }
   useEffect(() => {
     resetRef.current = reset;
@@ -480,10 +483,10 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         {labels.map((label, i) => (
           <li
             key={label}
-            aria-current={step === i ? "step" : undefined}
-            className={step === i ? "current" : step > i ? "done" : ""}
+            aria-current={step === i + 1 ? "step" : undefined}
+            className={step === i + 1 ? "current" : step > i + 1 ? "done" : ""}
           >
-            <span>{step > i ? <Check size={15} /> : i + 1}</span>
+            <span>{step > i + 1 ? <Check size={15} /> : i + 1}</span>
             {label}
           </li>
         ))}
@@ -493,7 +496,7 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         <h1>
           {
             [
-              "Temukan frame favoritmu.",
+              "Menyiapkan booth...",
               "Satu tim, pose paling seru!",
               "Menyimpan momenmu...",
               "Kenangan Hoya-Hoya, untuk dibawa pulang.",
@@ -502,11 +505,11 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         </h1>
         <p>
           {step === 0
-            ? "Ketuk langsung gambar frame yang kamu suka. Yuk, mulai!"
+            ? "Template acara sedang disiapkan. Tunggu sebentar, ya."
             : step === 1
               ? camera
                 ? "Posisikan diri, lalu ketuk Mulai countdown. Foto diambil otomatis."
-                : "Ketuk Buka kamera, lalu pilih Izinkan pada browser."
+                : "Ketuk Buka kamera untuk memulai, lalu izinkan akses kamera di browser."
               : step === 2
                 ? "Kolase dan video otomatis diproses. Tunggu sampai QR tampil."
                 : "Scan QR sekarang. Layar akan kembali otomatis untuk sesi berikutnya."}
@@ -534,8 +537,12 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
       )}
       <div className="booth-workspace">
         {step === 3 && result && <Celebration />}
-        {step === 0 && (
-          <Gallery onSelect={(f) => void select(f)} disabled={!!busy} />
+        {step === 0 && !busy && (
+          <div className="auto-upload-card">
+            <h2>Booth belum siap</h2>
+            <p>Hubungi pengelola untuk memeriksa template dan jaringan.</p>
+            <Button onClick={reset}>Coba lagi</Button>
+          </div>
         )}
         {step === 1 && frame && (
           <div className="capture-layout">
@@ -683,9 +690,9 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                 Setelah foto terakhir, tunggu QR tampil lalu scan dengan HP.
                 Tidak ada pilihan filter.
               </p>
-              <Button variant="ghost" disabled={!!busy} onClick={reset}>
-                <ArrowLeft size={17} /> Ganti frame
-              </Button>
+              <p className="small">
+                Template acara: {frame.name}. Disiapkan oleh pengelola.
+              </p>
             </aside>
           </div>
         )}
