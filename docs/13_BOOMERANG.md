@@ -1,5 +1,7 @@
 # Video MP4 dan folder hasil sesi
 
+Kamera live dan jepretan juga landscape: permintaan kamera ideal 1920 x 1080 (16:9), viewport dan area foto video mengikuti rasio slot foto pada template aktif. Stream perangkat yang berbeda dipotong cover di tengah tanpa stretching, sama dengan preview; kolase PNG memakai crop slot portrait. Deploy ulang dan refresh tab booth untuk menerapkan perubahan capture.
+
 ## Alur aktif event - 24 November 2026
 
 Peserta membuka `/` atau `/booth` dan langsung masuk layar ambil foto tanpa landing, galeri pilihan frame atau navbar atas. Booth mengambil template aktif dan durasi scan dari `GET /api/settings`, memuat snapshot overlay, lalu menunggu peserta menekan **Buka kamera** pada kunjungan pertama. Kamera hanya otomatis terbuka pada reload lanjutan setelah hasil sesi selesai (timer QR atau Foto lagi). Refresh biasa kembali menunggu Buka kamera. Izin kamera browser tetap diperlukan; Buka kamera tersedia sebagai retry jika perangkat/izin gagal. Peserta menekan **Mulai countdown**. Setelah foto terakhir, PNG + MP4 disimpan otomatis dan QR tampil. Sesudah timer admin habis (default 15 detik), media dibersihkan dan **halaman dimuat ulang**, kamera terbuka untuk peserta berikutnya. Browser tidak dapat mendeteksi apakah QR telah dipindai; pergantian peserta mengikuti timer atau tombol Foto lagi.
@@ -8,15 +10,15 @@ Admin tetap menyimpan banyak template dan memilih **Template aktif booth** pada 
 
 Spesifikasi alur di bagian ini menggantikan ketentuan landing/pilih frame/reset ke galeri pada bagian lama di bawah. Preview/loading/error/final, QR PNG/MP4, privasi memori, dan auth admin tetap mengikuti ketentuan lain.
 
-Revisi terbaru: video mengikuti tema pilihan (Vintage hitam, Gingham pink, Mint mint) dan menyediakan footer QR di luar area pose 3:4. Server memasang QR folder riil setelah folder dibuat, sebelum MP4 diunggah dan sharing diverifikasi. QR tetap tampil sepanjang enam detik dan sama dengan PNG/layar. `videoDataUrl` mengembalikan MP4 final yang sama persis untuk preview/download; mode mock dan fallback sebelum upload tidak mempunyai QR folder. Respons PNG + MP4 dapat sekitar 38 MiB base64; tidak boleh dicatat atau di-cache. File sementara stamping dibersihkan pada sukses/gagal.
+Revisi terbaru: video mengikuti tema pilihan (Vintage hitam, Gingham pink, Mint mint) dan menyediakan footer QR di bawah area pose yang mengikuti rasio slot foto template; bagian atas hanya foto, nama event/perusahaan dan keterangan berada bersama QR di bawah. Server memasang QR folder riil setelah folder dibuat, sebelum MP4 diunggah dan sharing diverifikasi. QR tetap tampil sepanjang enam detik dan sama dengan PNG/layar. `videoDataUrl` mengembalikan MP4 final yang sama persis untuk preview/download; mode mock dan fallback sebelum upload tidak mempunyai QR folder. Respons PNG + MP4 dapat sekitar 38 MiB base64; tidak boleh dicatat atau di-cache. File sementara stamping dibersihkan pada sukses/gagal.
 
 Revisi fitur ini menggantikan spesifikasi awal yang menyimpan satu PNG dengan QR per-file. Tidak ada database atau riwayat pengguna yang ditambahkan.
 
 ## Hasil dan alur
 
 - Kolase PNG tetap mengikuti frame pilihan pada resolusi asli dan renderer preview yang sama.
-- Video MP4 menampilkan satu pose bergantian pada kartu event vertikal orisinal. Tiga foto memakai urutan `1 → 2 → 3 → 1 → 2 → 3`, satu detik per foto, total enam detik. Video berjalan maju dan mengulang tanpa efek boomerang. Tidak ada interpolasi gerak; hasil berupa pergantian foto, bukan rekaman kamera bergerak.
-- Output video: 1080 × 1920 (9:16), H.264 high, yuv420p, 30 fps, tanpa audio, faststart. Bingkai video memakai nama event/perusahaan dan area foto cover 3:4; overlay strip PNG tidak diregangkan menjadi video.
+- Video MP4 menampilkan satu pose bergantian pada kartu event landscape orisinal. Tiga foto memakai urutan `1 → 2 → 3 → 1 → 2 → 3`, satu detik per foto, total enam detik. Video berjalan maju dan mengulang tanpa efek boomerang. Tidak ada interpolasi gerak; hasil berupa pergantian foto, bukan rekaman kamera bergerak.
+- Output video: 1440 × 1080 (4:3), H.264 high, yuv420p, 30 fps, tanpa audio, faststart. Bingkai video memakai nama event/perusahaan dan area foto cover dengan rasio slot template yang sebenarnya, dihitung dari koordinat slot dan dimensi PNG; overlay strip PNG tidak diregangkan menjadi video. Area foto video dipasang proporsional di tengah batas 1312 x 776; crop kamera/video mengikuti slot cetak, tanpa memaksa rasio 20:9. Artwork landscape dirancang tersendiri dengan detail tema kecil, matte tipis dan footer sejajar: event di kiri, QR di kanan. Browser dan stamping server memakai fungsi artwork yang sama.
 - Alur antrean terbaru memakai warna natural; mirror dan crop mengikuti pengambilan kamera/frame. Panel review, retake dan pilihan filter dihilangkan dari guest. Layout custom 1–6 slot tetap didukung.
 - Preview MP4 di hasil memakai kontrol play/pause dan loop; tidak autoplay. Buka kamera langsung aktif tanpa checkbox konfirmasi; informasi proses otomatis/folder publik tersedia di Privasi footer, izin kamera tetap melalui browser. Sesudah capture, encoder sementara memproses video otomatis. Area QR cetak menyatu dengan warna/sisi footer frame; tiga foto tetap utuh. Preview/download PNG final memerlukan proses simpan berhasil. PNG dasar tanpa QR tetap bisa diunduh jika gagal.
 - Hasil PNG dan MP4 disimpan dalam folder publik per sesi. Sesudah foto terakhir, kedua file langsung diproses dan dikirim. Error mempertahankan salinan lokal serta menyediakan retry tanpa QR palsu; retry memakai MP4 yang sudah berhasil dibuat.
@@ -35,7 +37,7 @@ Server membuat folder privat dan QR URL kanonis memakai ID folder dari Drive, me
 
 ## Pemrosesan dan batas
 
-`POST /api/boomerang` menerima 1–6 JPEG edit 1080 × 1920, masing-masing maksimal 2 MiB, serta `processingConsent=true`. Sharp memvalidasi dan menulis ulang JPEG tanpa metadata. FFmpeg membaca urutan dari nama file internal dalam direktori temp acak, tidak memakai shell atau URL input. Output dikembalikan sebagai MP4 `no-store` dan disimpan hanya sebagai Blob browser.
+`POST /api/boomerang` menerima 1–6 JPEG edit 1440 × 1080, masing-masing maksimal 2 MiB, serta `processingConsent=true`. Sharp memvalidasi dan menulis ulang JPEG tanpa metadata. FFmpeg membaca urutan dari nama file internal dalam direktori temp acak, tidak memakai shell atau URL input. Output dikembalikan sebagai MP4 `no-store` dan disimpan hanya sebagai Blob browser.
 
 `POST /api/photos` menerima satu kolase PNG/JPEG maksimal 12 MiB, satu MP4 maksimal 16 MiB dan `consent=true`. FFprobe memeriksa codec, dimensi, fps, durasi, satu video stream tanpa audio; FFmpeg mendecode stream untuk mendeteksi kerusakan sebelum Drive upload. Tidak mempercayai MIME/ekstensi saja. Proxy menerima setidaknya 32 MiB; semua batas aplikasi tetap berlaku.
 

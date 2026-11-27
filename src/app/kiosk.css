@@ -427,10 +427,25 @@ body:has(.kiosk-shell) {
   min-height: 0;
   gap: 4px;
 }
-.kiosk-shell .camera-viewport {
+.kiosk-shell .camera-stage {
   flex: 1;
   min-height: 0;
-  aspect-ratio: auto;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+.kiosk-shell .camera-viewport {
+  width: min(100cqw, calc(100cqh * var(--camera-aspect)));
+  aspect-ratio: var(--camera-aspect);
+  flex: none;
+}
+@container (max-height: 210px) {
+  .kiosk-shell .camera-welcome-icon {
+    display: none;
+  }
+  .kiosk-shell .camera-placeholder h2 {
+    font-size: 17px;
+  }
 }
 .kiosk-shell .camera-placeholder {
   gap: 12px;
@@ -481,8 +496,12 @@ body:has(.kiosk-shell) {
 .kiosk-shell .capture-thumbs > div {
   min-height: 0;
   max-height: 220px;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 3;
   font-size: clamp(22px, 3vw, 38px);
+}
+.kiosk-shell .capture-thumbs img {
+  position: absolute;
+  inset: 0;
 }
 .kiosk-shell .capture-sidebar > .button {
   flex-shrink: 0;
@@ -524,6 +543,15 @@ body:has(.kiosk-shell) {
   flex: 1;
   height: auto;
   overflow: hidden;
+}
+.kiosk-shell .output-preview .video-stage {
+  background: transparent;
+  padding: 0;
+}
+.kiosk-shell .video-stage > video {
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
 }
 .output-tabs {
   display: flex;

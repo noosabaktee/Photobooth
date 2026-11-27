@@ -1,5 +1,9 @@
 # Deployment KMI Photobooth
 
+Kamera live dan jepretan juga landscape: permintaan kamera ideal 1920 x 1080 (16:9), viewport dan area foto video mengikuti rasio slot foto pada template aktif. Stream perangkat yang berbeda dipotong cover di tengah tanpa stretching, sama dengan preview; kolase PNG memakai crop slot portrait. Deploy ulang dan refresh tab booth untuk menerapkan perubahan capture.
+
+Video MP4 sesi baru memakai **landscape 1440 × 1080 (4:3)**, area foto mengikuti rasio slot template aktif (bukan rasio ultrawide tetap), tema sesuai frame dan QR folder di footer bawah tanpa menutupi pose; bagian atas hanya menampilkan foto landscape. Kolase PNG tetap portrait mengikuti slot template. Durasi video tetap enam detik/30 fps, urutan 1-2-3-1-2-3; preview/download identik dengan file Drive. File sesi lama di Drive tidak diubah. Deploy kode browser dan server bersamaan melalui build Linux baru; refresh tab booth agar pose JPEG yang dikirim sesuai validator landscape. Tidak perlu env atau seed frame baru.
+
 ## Alur booth terbaru (24 November 2026)
 
 Setelah deploy, login `/admin`, publish template yang diinginkan, lalu di **Pengaturan antrean booth** pilih **Template aktif booth**, atur durasi QR, dan klik **Simpan pengaturan**. Daftar admin tetap menyimpan banyak template. Pilihan disimpan di `frames/kiosk-settings.json` privat Drive (mock: memori); file lama tetap kompatibel. Jika belum dipilih/null, template published pertama digunakan. Jika template yang dipilih di-unpublish/arsip, pilih penggantinya di admin.

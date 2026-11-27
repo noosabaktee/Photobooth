@@ -5,7 +5,7 @@ import {
   BOOMERANG_IMAGE_BYTES,
 } from "./boomerang";
 import { selectedStarterStyle } from "./starter-artwork";
-import { videoArtwork, videoLayout } from "./video-design";
+import { videoArtwork, videoPhotoArea } from "./video-design";
 export type Filter = "natural" | "bw" | "warm" | "cool";
 export type Photo = { url: string; mirror: boolean };
 export function filterPixel(r: number, g: number, b: number, filter: Filter) {
@@ -87,7 +87,7 @@ async function preparePhoto(photo: Photo, filter: Filter) {
   return { source, width: source.width, height: source.height };
 }
 
-/** Edited poses for an original vertical video card; camera originals stay in the browser. */
+/** Landscape poses for a separate video card; camera originals stay in the browser. */
 export async function exportBoomerangFrames(
   frame: PublicFrame,
   photos: Photo[],
@@ -100,11 +100,12 @@ export async function exportBoomerangFrames(
   )
     throw new Error("Lengkapi semua foto sebelum membuat video.");
   await document.fonts.ready;
-  const artwork = await loadImage(
-    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(videoArtwork(selectedStarterStyle(frame)))}`,
-  );
   const output: Blob[] = [];
   for (const slot of [...frame.slots].sort((a, b) => a.order - b.order)) {
+    const area = videoPhotoArea(frame, slot);
+    const artwork = await loadImage(
+      `data:image/svg+xml;charset=utf-8,${encodeURIComponent(videoArtwork(selectedStarterStyle(frame), false, area))}`,
+    );
     const photo = photos[slot.order],
       image = await preparePhoto(photo, filter);
     const canvas = document.createElement("canvas");
@@ -112,16 +113,16 @@ export async function exportBoomerangFrames(
     canvas.height = BOOMERANG_HEIGHT;
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(artwork, 0, 0, canvas.width, canvas.height);
-    // Keep a generous portrait photo area; never stretch the camera image.
+    // The video window has the same aspect as this template's actual photo slot.
     drawSlot(
       ctx,
       {
         ...slot,
-        x: videoLayout.photo.x / 1080,
-        y: videoLayout.photo.y / 1920,
-        width: videoLayout.photo.width / 1080,
-        height: videoLayout.photo.height / 1920,
-        borderRadius: 0.025,
+        x: area.x / BOOMERANG_WIDTH,
+        y: area.y / BOOMERANG_HEIGHT,
+        width: area.width / BOOMERANG_WIDTH,
+        height: area.height / BOOMERANG_HEIGHT,
+        borderRadius: 0.0125,
       },
       image.source,
       image.width,

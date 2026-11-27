@@ -69,7 +69,7 @@ Kinds `overlay|thumbnail`, only allow known frame association & requested retain
 
 ### `POST /api/boomerang`
 
-Guest route dengan origin check, throttle 10/menit/IP dan batas dua pekerjaan encoder/validator per proses. Multipart `frames` berulang (1–6 JPEG yang sudah diedit, masing-masing 1080 × 1920 px, maksimal 2 MiB) dan `processingConsent=true`. Body dibatasi 12 MiB + 64 KiB. Menghasilkan binary `video/mp4`, `Cache-Control: no-store`, bukan link Drive. FFmpeg membuat enam detik H.264/yuv420p, 30 fps, tanpa audio, urutan `1 → 2 → 3 → 1 → 2 → 3`, satu detik per foto. File sementara server dibersihkan pada sukses/gagal; tidak ada upload Drive pada endpoint ini. Nama endpoint lama dipertahankan untuk kompatibilitas.
+Guest route dengan origin check, throttle 10/menit/IP dan batas dua pekerjaan encoder/validator per proses. Multipart `frames` berulang (1–6 JPEG yang sudah diedit, masing-masing 1440 × 1080 px, maksimal 2 MiB) dan `processingConsent=true`. Body dibatasi 12 MiB + 64 KiB. Menghasilkan binary `video/mp4`, `Cache-Control: no-store`, bukan link Drive. FFmpeg membuat enam detik H.264/yuv420p, 30 fps, tanpa audio, urutan `1 → 2 → 3 → 1 → 2 → 3`, satu detik per foto. File sementara server dibersihkan pada sukses/gagal; tidak ada upload Drive pada endpoint ini. Nama endpoint lama dipertahankan untuk kompatibilitas.
 
 ### `POST /api/photos`
 

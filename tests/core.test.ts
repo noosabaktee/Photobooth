@@ -11,6 +11,32 @@ import {
 import { cover, mirroredX, replacePhoto, filterPixel } from "@/lib/compositor";
 import { driveViewUrl, driveFolderUrl } from "@/lib/urls";
 import { slideshowOrder } from "@/lib/boomerang";
+import { videoPhotoArea, videoLayout } from "@/lib/video-design";
+
+it.each(manifest.frames)(
+  "$name video has the same photo aspect as its print slot",
+  (frame) => {
+    for (const slot of frame.slots) {
+      const area = videoPhotoArea(frame, slot);
+      const slotRatio =
+        (slot.width * frame.dimensions.width) /
+        (slot.height * frame.dimensions.height);
+      expect(area.width / area.height).toBeCloseTo(slotRatio, 8);
+      expect(area.x + area.width / 2).toBe(videoLayout.width / 2);
+      expect(area.y + area.height).toBeLessThan(videoLayout.qrRegion.top);
+    }
+  },
+);
+
+it("custom video slots use actual template pixels and fit both tall and wide shapes without distortion", () => {
+  const frame = { dimensions: { width: 1000, height: 2000 } };
+  const tall = videoPhotoArea(frame, { width: 0.5, height: 0.5 });
+  expect(tall.width / tall.height).toBeCloseTo(0.5, 8);
+  expect(tall.height).toBe(videoLayout.photo.height);
+  const wide = videoPhotoArea(frame, { width: 1, height: 0.1 });
+  expect(wide.width / wide.height).toBeCloseTo(5, 8);
+  expect(wide.width).toBe(videoLayout.photo.width);
+});
 vi.mock("@/lib/video-server", () => ({
   stampVideo: vi.fn(async (bytes: Buffer) =>
     Buffer.concat([Buffer.from("stamped:"), bytes]),

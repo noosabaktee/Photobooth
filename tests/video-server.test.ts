@@ -19,7 +19,7 @@ const temporaryFiles = async () =>
 beforeAll(async () => {
   frames = await Promise.all(
     ["#e02030", "#20d040", "#3040df"].map((background) =>
-      sharp({ create: { width: 1080, height: 1920, channels: 3, background } })
+      sharp({ create: { width: 1440, height: 1080, channels: 3, background } })
         .jpeg()
         .toBuffer(),
     ),
@@ -29,7 +29,7 @@ beforeAll(async () => {
   expect(await temporaryFiles()).toEqual(before);
 }, 60000);
 
-it("encodes actual H.264/MP4, 1080x1920, 30 fps, six seconds, no audio, and fully decodes it", async () => {
+it("encodes actual H.264/MP4, 1440x1080, 30 fps, six seconds, no audio, and fully decodes it", async () => {
   expect(video.subarray(4, 8).toString()).toBe("ftyp");
   const before = await temporaryFiles();
   await expect(validateVideo(video, "video/mp4")).resolves.toBeUndefined();
@@ -98,6 +98,15 @@ it("rejects forged/truncated MP4 and oversized, corrupt or incorrectly sized sou
   await expect(encodeBoomerang([small])).rejects.toMatchObject({
     code: "INVALID_IMAGE",
   });
+  // Same pixel count, opposite orientation: legacy portrait inputs must not slip through.
+  const portrait = await sharp({
+    create: { width: 1080, height: 1920, channels: 3, background: "#fff" },
+  })
+    .jpeg()
+    .toBuffer();
+  await expect(encodeBoomerang([portrait])).rejects.toMatchObject({
+    code: "INVALID_IMAGE",
+  });
 }, 60000);
 
 it("cleans temporary images after an unavailable encoder and reports configuration error", async () => {
@@ -148,12 +157,7 @@ it.each(starterStyles)(
           path.join(directory, `pose-${String(i + 1).padStart(2, "0")}.png`),
         );
         const { data, info } = await sharp(frame)
-          .extract({
-            left: 0,
-            top: videoLayout.footerTop,
-            width: 1080,
-            height: 1920 - videoLayout.footerTop,
-          })
+          .extract(videoLayout.qrRegion)
           .ensureAlpha()
           .raw()
           .toBuffer({ resolveWithObject: true });
@@ -162,7 +166,7 @@ it.each(starterStyles)(
         ).toBe(url);
         const color = [
           ...(await sharp(frame)
-            .extract({ left: 540, top: 900, width: 1, height: 1 })
+            .extract({ left: 540, top: 500, width: 1, height: 1 })
             .removeAlpha()
             .raw()
             .toBuffer()),

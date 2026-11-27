@@ -33,7 +33,10 @@ export async function installCamera(page: Page) {
       )) as typeof window.setTimeout;
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
       configurable: true,
-      value: async () => {
+      value: async (constraints: MediaStreamConstraints) => {
+        (
+          window as unknown as { testCameraConstraints: MediaStreamConstraints }
+        ).testCameraConstraints = constraints;
         metrics.testCameraCalls++;
         const canvas = document.createElement("canvas");
         canvas.width = 800;

@@ -60,7 +60,7 @@ flowchart TD
 ### Public photo write
 
 1. Render full PNG locally. PNG download does not send any photo to the server.
-2. After the final camera capture, render natural portrait poses in the browser, send them to `/api/boomerang`, and receive a six-second MP4 back into browser memory. Bounded temporary files are deleted in `finally`; two jobs per process, timeouts, no shell commands, no database.
+2. After the final camera capture, render natural landscape poses (1440 x 1080, with a centered photo area matching each active template slot aspect, bounded by 1312 x 776) in the browser, send them to `/api/boomerang`, and receive a six-second MP4 back into browser memory. Bounded temporary files are deleted in `finally`; two jobs per process, timeouts, no shell commands, no database.
 3. Automatically send PNG + MP4 and the bounded layout snapshot to `/api/photos`; verify both media streams and layout dimensions before any Drive mutation. Guest starts through Buka kamera and countdown without a confirmation checkbox; privacy remains available in the footer.
 4. Create a private session folder under private `photos/`, integrate the folder QR into the PNG footer, upload the two files, then set `anyone:reader` on **that session folder only**. Verify inherited public access on both children.
 5. Return the actual Drive folder `webViewLink` only after all steps succeed. Roll back the session best-effort on partial failure; never return a QR for incomplete results.

@@ -1,5 +1,10 @@
 # MASTER PROMPT UNTUK CODEX — DIGITAL PHOTOBOOTH
 
+Kamera live dan jepretan juga landscape: permintaan kamera ideal 1920 x 1080 (16:9), viewport dan area foto video mengikuti rasio slot foto pada template aktif. Stream perangkat yang berbeda dipotong cover di tengah tanpa stretching, sama dengan preview; kolase PNG memakai crop slot portrait. Deploy ulang dan refresh tab booth untuk menerapkan perubahan capture.
+
+Video MP4 sesi baru memakai **landscape 1440 × 1080 (4:3)**, area foto mengikuti rasio slot template aktif (bukan rasio ultrawide tetap), tema sesuai frame dan QR folder di footer bawah tanpa menutupi pose; bagian atas hanya menampilkan foto landscape. Kolase PNG tetap portrait mengikuti slot template. Durasi video tetap enam detik/30 fps, urutan 1-2-3-1-2-3; preview/download identik dengan file Drive. File sesi lama di Drive tidak diubah.
+
+
 ## Alur aktif event - 24 November 2026
 
 Peserta membuka `/` atau `/booth` dan langsung masuk layar ambil foto tanpa landing, galeri pilihan frame atau navbar atas. Booth mengambil template aktif dan durasi scan dari `GET /api/settings`, memuat snapshot overlay, lalu menunggu peserta menekan **Buka kamera** pada kunjungan pertama. Kamera hanya otomatis terbuka pada reload lanjutan setelah hasil sesi selesai (timer QR atau Foto lagi). Refresh biasa kembali menunggu Buka kamera. Izin kamera browser tetap diperlukan; Buka kamera tersedia sebagai retry jika perangkat/izin gagal. Peserta menekan **Mulai countdown**. Setelah foto terakhir, PNG + MP4 disimpan otomatis dan QR tampil. Sesudah timer admin habis (default 15 detik), media dibersihkan dan **halaman dimuat ulang**, kamera terbuka untuk peserta berikutnya. Browser tidak dapat mendeteksi apakah QR telah dipindai; pergantian peserta mengikuti timer atau tombol Foto lagi.

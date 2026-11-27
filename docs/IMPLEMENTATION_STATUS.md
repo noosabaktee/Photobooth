@@ -1,4 +1,47 @@
-# Implementation status - 24 November 2026
+# Implementation status - 27 November 2026
+
+## 27 November 2026 - kartu video kompak dan thumbnail landscape (selesai)
+
+- Kartu MP4 diubah menjadi landscape 4:3, 1440 x 1080 agar ruang samping tidak berlebihan. Area foto tetap mengikuti rasio slot template dan dibatasi 1312 x 776; posisi footer event, ukuran teks, margin dan QR disusun ulang. QR tetap di bawah, background sesuai tema, kolase portrait dan urutan enam detik tidak berubah.
+- Tiga kotak preview jepretan kini mengikuti rasio foto template, termasuk sebelum capture; tinggi portrait dari breakpoint lama tidak lagi memaksa bentuk kotak. Gambar thumbnail diposisikan di dalam kotak agar dimensi intrinsik tidak meregangkan grid. Preview MP4 memakai elemen landscape dan background transparan, tanpa checkerboard di sekelilingnya.
+- Preview ilustrasi sintetis Mint/Film diperiksa sebelum pengujian. Regresi browser mengukur ketiga thumbnail pada sembilan viewport. Encoder dan validasi server diperbarui bersama ukuran ekspor browser, docs dan fixtures; perlu deploy frontend/backend bersamaan lalu refresh booth. PASS: lint, format, typecheck, production build, 71/71 unit/integration dengan `npm test -- --testTimeout 15000`, dan 28/28 E2E Chromium dalam satu run. Run unit default pertama melewati batas lima detik pada tes upload resumable yang tidak diubah; batas I/O run ulang menjadi 15 detik tanpa mengubah assertion atau kode produksi. QR ketiga tema terbaca; thumbnail landscape terbukti pada sembilan viewport tanpa scroll. Preview kartu Mint/Film dan tampilan kamera/thumbnail 1366x768 diperiksa visual. Tidak memakai credential, tidak upload Drive riil; perubahan belum deploy.
+
+## 27 November 2026 - rasio video sama dengan slot foto (selesai)
+
+- Menghapus rasio pose/capture ultrawide 20:9 tetap. `videoPhotoArea` menghitung rasio dari lebar/tinggi slot dalam piksel template, lalu memasangnya proporsional di tengah area video. Setiap seed dan slot custom mengikuti ukuran foto aslinya; koordinat normalized dikalikan dimensi PNG terlebih dahulu.
+- Kamera live dan capture mengikuti slot yang sedang diambil beserta cropPosition. Ekspor MP4 memakai rasio slot yang sama dan matte menyesuaikan area foto. Wadah MP4 tetap 1920 x 1080, QR di footer bawah, kolase portrait dan durasi enam detik tetap.
+- Regresi ditambah untuk tiga seed, custom slot tinggi/lebar, kamera sembilan viewport dan input portrait. PASS: lint, format, typecheck, production build, 71 unit/integration tests dan 28/28 E2E Chromium (sembilan viewport). MP4 hasil browser diperiksa visual; area pose kini sama rasionya dengan slot cetak, QR ketiga tema terbaca. Loader manifest JSON E2E diperbaiki dengan import attribute Node sebelum run sukses penuh. Tidak memakai credential atau mengunggah media ke Drive riil. Perubahan lokal, perlu deploy ulang dan refresh booth.
+
+## 27 November 2026 - kamera capture landscape (selesai)
+
+- Memperbaiki kamera, bukan hanya artwork MP4: constraint ideal 1920 x 1080 dan 16:9, live viewport dikunci landscape mengikuti area pose video. Stage menyesuaikan ruang layar tanpa mengubah rasio preview menjadi portrait. Placeholder pada stage pendek disederhanakan.
+- Capture center-cover memakai area yang sama dengan preview; stream portrait/4:3 tetap menghasilkan jepretan landscape tanpa rotasi/stretch. Mirror konsisten. PNG tetap mengikuti template portrait, MP4 dan QR footer tetap seperti desain terakhir. Kunjungan pertama manual dan lanjutan otomatis tidak berubah.
+- Regresi browser ditambah untuk rasio kamera di sembilan viewport, constraint kamera, dan stream portrait sintetis yang menghasilkan tiga capture landscape. PASS: format, lint, typecheck, build, 67 unit/integration tests dan 28/28 E2E Chromium. Rasio kamera landscape terbukti pada sembilan viewport desktop/HP; tiga capture dari stream portrait sintetis memiliki crop/rasio yang benar. Preview desktop 1920x1080 dan HP 320x568 diperiksa visual. Tidak memakai credential atau upload Drive riil. Perubahan lokal, perlu deploy ulang dan refresh halaman booth.
+
+## 27 November 2026 - komposisi bingkai video (selesai)
+
+- Area foto diperlebar menjadi 1760 x 792 (20:9, cover), lebih dari 90% lebar MP4 1920 x 1080. Margin kiri/kanan 80 px, atas 40 px; foto tetap dominan di atas, tanpa header menutupi pose. Kolase portrait dan crop slot cetak tidak diubah.
+- Artwork video tersendiri mempertahankan tema film hitam/cream, gingham pink dan mint. Perforasi kecil, matte 8 px, radius foto lebih halus, motif lebih kecil dan footer berhierarki: identitas event rata kiri, ajakan scan dan QR rata kanan. Tidak menyalin foto, logo atau artwork contoh pengguna.
+- `videoArtwork` kini dipakai bersama oleh browser dan stamping server untuk mencegah perbedaan spacing/font/footer. QR folder tetap di bawah; durasi enam detik dan urutan 1-2-3-1-2-3 tetap sama. Mock tetap tanpa QR/link Drive palsu.
+- Preview ketiga tema diperiksa dengan ilustrasi sintetis lokal di `.qa/` ignored. PASS: lint, format, typecheck, production build, 67/67 unit/integration tests dan 7/7 E2E Chromium terarah (ekspor otomatis, QR video ketiga tema, serta viewport 1920x1080, 320x568 dan 667x375 tanpa scroll). MP4 hasil browser juga diperiksa visual. Run unit pertama mengalami timeout lima detik pada tes QR cetak yang tidak diubah; run ulang penuh tanpa build bersamaan lulus 67/67 tanpa perubahan batas waktu. Tidak ada perubahan credential atau upload Drive riil; perlu deploy ulang dan refresh tab booth.
+
+## 27 November 2026 - QR video kembali di bawah (selesai)
+
+- MP4 tetap landscape 1920 x 1080. Area pose 1280 x 720 di atas hanya menampilkan foto; nama event/perusahaan, keterangan dan QR berada di footer bawah. Background footer melanjutkan tema film/gingham/mint tanpa panel warna terpisah. Kolase PNG tetap portrait dan tidak diubah.
+- Layout browser dan stamping server memakai koordinat bersama. QR folder asli tetap terlihat sepanjang enam detik; urutan dan durasi video tidak berubah. Regresi browser memeriksa footer di bawah area pose, dan tes FFmpeg memeriksa decode QR enam titik waktu untuk ketiga tema.
+- PASS: lint, format, typecheck, production build, 67 unit/integration tests dan 28/28 E2E Chromium dalam satu run. QR footer ketiga tema terbaca pada enam titik video; preview hitam/pink/mint diperiksa visual, sembilan viewport desktop/HP tanpa scroll tetap lulus. Tidak ada perubahan credential, environment atau seed, tidak upload Drive riil. Deploy ulang lalu refresh tab booth agar artwork browser dan stamping server sama.
+
+## 27 November 2026 - video landscape (selesai)
+
+- MP4 dan pose JPEG encoder diubah menjadi 1920 x 1080 (16:9); kolase PNG dan slot cetak portrait tidak diubah. Area foto video tersendiri 1200 x 675, cover tanpa stretching, mirror/crop mengikuti capture. Urutan 1-2-3-1-2-3 tetap enam detik, satu detik per foto, 30 fps H.264 tanpa audio.
+- Tema video mengikuti seed. Header dipusatkan di atas area foto; QR folder riil pada panel kanan melanjutkan artwork tanpa menutup pose. Encoder, validator upload, stamping dan preview/download memakai orientasi yang sama. Mock tetap tanpa QR/link Drive palsu.
+- PASS: 67 unit/integration tests (enam file), lint, format, typecheck dan production build. Regresi FFmpeg memeriksa decode penuh MP4 1920 x 1080, urutan seluruh 180 frame dan QR sisi kanan ketiga tema di enam titik durasi, input portrait lama ditolak, serta cleanup file sementara. PASS: 28/28 E2E Chromium dalam satu run, termasuk pose/mirror, PNG portrait tetap, QR ketiga tema dan sembilan viewport desktop/HP tanpa scroll. Preview video hitam, pink dan mint diperiksa secara visual. Perubahan lokal, belum deploy; tidak melakukan upload Drive riil atau memakai foto pribadi. Deploy frontend dan backend bersamaan, lalu refresh tab booth agar JPEG encoder lama tidak terkirim. Tidak perlu environment atau seed baru.
+
+## Diagnosis akses Drive lokal - 25 November 2026
+
+- Uji baca metadata folder Drive memakai loader environment yang sama dengan aplikasi menghasilkan HTTP 400 `invalid_grant`. Seluruh key konfigurasi yang diperlukan terisi; nilai credential tidak dicetak. Kegagalan terjadi saat otorisasi Google sebelum metadata folder dibaca, sehingga belum dapat menyimpulkan kuota atau ACL folder bermasalah.
+- Tindakan pemulihan: OAuth ulang dengan `npm run drive:auth -- --save-env`, akun/client yang sama, lalu restart aplikasi. Jika server memakai token yang sama, perbarui secret server secara privat dan restart service. Tidak melakukan bootstrap/seed, mengubah folder, mengunggah foto, mengganti token atau memulai consent pada diagnosis ini.
+- Status Testing External dapat membatasi refresh token menjadi tujuh hari, tetapi penyebab spesifik token ini tidak disimpulkan tanpa pemeriksaan konfigurasi Cloud. Script diagnostik lokal hanya di `.qa/` ignored; tidak menyimpan credential di output. Tidak ada perubahan kode aplikasi.
 
 ## Koreksi awal manual, lanjutan otomatis - 24 November 2026
 

@@ -5,6 +5,7 @@ import {
   useEffectEvent,
   useRef,
   useState,
+  type CSSProperties,
 } from "react";
 import {
   Camera,
@@ -27,6 +28,7 @@ import {
   exportComposition,
   exportBoomerangFrames,
   loadImage,
+  cover,
   type Photo,
 } from "@/lib/compositor";
 import { driveFolderUrl } from "@/lib/urls";
@@ -34,6 +36,7 @@ import { eventIdentity } from "@/lib/event";
 import { scanSecondsSchema } from "@/lib/kiosk-settings";
 import { exportPrintPreview } from "@/lib/print-preview-client";
 import { selectedStarterStyle } from "@/lib/starter-artwork";
+import { videoPhotoArea } from "@/lib/video-design";
 
 type Result =
   | { mode: "mock"; message: string }
@@ -79,6 +82,9 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
     urls = useRef(new Set<string>()),
     uploadLock = useRef(false);
   const network = useRef<AbortController | null>(null);
+  const cameraSlot = frame?.slots.find((slot) => slot.order === shot);
+  const cameraArea =
+    frame && cameraSlot ? videoPhotoArea(frame, cameraSlot) : null;
   const remember = useCallback((blob: Blob) => {
     const url = URL.createObjectURL(blob);
     urls.current.add(url);
@@ -223,7 +229,8 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
             ? { deviceId: { exact: deviceId } }
             : { facingMode: "user" }),
           width: { ideal: 1920 },
-          height: { ideal: 1440 },
+          height: { ideal: 1080 },
+          aspectRatio: { ideal: 16 / 9 },
         },
       });
       if (attempt !== sequence.current) {
@@ -280,10 +287,31 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         if (!v?.videoWidth)
           throw new Error("Kamera belum siap. Buka kembali kamera.");
         const c = document.createElement("canvas");
-        const scale = Math.min(1, 1920 / v.videoWidth);
-        c.width = Math.round(v.videoWidth * scale);
-        c.height = Math.round(v.videoHeight * scale);
-        c.getContext("2d")!.drawImage(v, 0, 0, c.width, c.height);
+        // Capture the same landscape scene shown in the live preview, even
+        // when a device supplies a portrait/4:3 stream. Never rotate/stretch it.
+        const slot = frame.slots.find((slot) => slot.order === index)!;
+        const area = videoPhotoArea(frame, slot);
+        const crop = cover(
+          v.videoWidth,
+          v.videoHeight,
+          area.width,
+          area.height,
+          slot.cropPosition,
+        );
+        const scale = Math.min(1, crop.sw / area.width);
+        c.width = Math.max(2, Math.round(area.width * scale));
+        c.height = Math.max(2, Math.round(area.height * scale));
+        c.getContext("2d")!.drawImage(
+          v,
+          crop.sx,
+          crop.sy,
+          crop.sw,
+          crop.sh,
+          0,
+          0,
+          c.width,
+          c.height,
+        );
         const blob = await new Promise<Blob>((resolve, reject) =>
           c.toBlob(
             (b) => (b ? resolve(b) : reject(new Error("Capture gagal."))),
@@ -547,46 +575,60 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
         {step === 1 && frame && (
           <div className="capture-layout">
             <section className="camera-panel">
-              <div className="camera-viewport">
-                <video
-                  ref={video}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{ transform: mirror ? "scaleX(-1)" : "none" }}
-                  aria-label="Preview kamera"
-                />
-                {!camera && (
-                  <div className="camera-placeholder">
-                    <span className="camera-welcome-icon">
-                      <Camera size={44} />
-                    </span>
-                    <h2>Halo, calon kenangan! ♡</h2>
-                    <p>
-                      Rekan satu tim sudah siap? Ketuk Buka kamera di bawah.
-                    </p>
-                  </div>
-                )}
-                {camera && countdown === null && !busy && (
-                  <span className="camera-ready-badge">
-                    <span />
-                    Kamera siap · waktunya berpose!
-                  </span>
-                )}
-                {countdown !== null && (
-                  <CaptureCountdown
-                    value={countdown}
-                    shot={shot}
-                    total={frame.slots.length}
+              <div
+                className="camera-stage"
+                style={
+                  {
+                    "--camera-aspect": cameraArea
+                      ? cameraArea.width / cameraArea.height
+                      : 4 / 3,
+                  } as CSSProperties
+                }
+              >
+                <div className="camera-viewport">
+                  <video
+                    ref={video}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      transform: mirror ? "scaleX(-1)" : "none",
+                      objectPosition: `${(cameraSlot?.cropPosition?.x ?? 0.5) * 100}% ${(cameraSlot?.cropPosition?.y ?? 0.5) * 100}%`,
+                    }}
+                    aria-label="Preview kamera"
                   />
-                )}
-                {camera && countdown === null && !busy && (
-                  <span className="camera-position-hint">
-                    Lihat kamera, rapatkan barisan, dan senyum!
-                  </span>
-                )}
-                <span className="camera-corner top-left" />
-                <span className="camera-corner bottom-right" />
+                  {!camera && (
+                    <div className="camera-placeholder">
+                      <span className="camera-welcome-icon">
+                        <Camera size={44} />
+                      </span>
+                      <h2>Halo, calon kenangan! ♡</h2>
+                      <p>
+                        Rekan satu tim sudah siap? Ketuk Buka kamera di bawah.
+                      </p>
+                    </div>
+                  )}
+                  {camera && countdown === null && !busy && (
+                    <span className="camera-ready-badge">
+                      <span />
+                      Kamera siap · waktunya berpose!
+                    </span>
+                  )}
+                  {countdown !== null && (
+                    <CaptureCountdown
+                      value={countdown}
+                      shot={shot}
+                      total={frame.slots.length}
+                    />
+                  )}
+                  {camera && countdown === null && !busy && (
+                    <span className="camera-position-hint">
+                      Lihat kamera, rapatkan barisan, dan senyum!
+                    </span>
+                  )}
+                  <span className="camera-corner top-left" />
+                  <span className="camera-corner bottom-right" />
+                </div>
               </div>
               <div className="camera-toolbar">
                 <span className="eyebrow">
@@ -666,6 +708,13 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                     key={s.id}
                     className={`${i === shot ? "active" : ""} ${photos[i] ? "captured" : ""}`}
                     aria-label={`Jepretan ${i + 1}${photos[i] ? " selesai" : " belum diambil"}`}
+                    style={{
+                      aspectRatio:
+                        (s.width * frame.dimensions.width) /
+                        (s.height * frame.dimensions.height),
+                      height: "auto",
+                      width: "100%",
+                    }}
                   >
                     {photos[i] ? (
                       <img
@@ -773,7 +822,9 @@ export function Booth({ mode }: { mode: "mock" | "google-drive" }) {
                   Video MP4
                 </button>
               </div>
-              <div className="composition-stage">
+              <div
+                className={`composition-stage${preview === "video" ? " video-stage" : ""}`}
+              >
                 {preview === "photo" ? (
                   <img src={rendered.url} alt="Hasil akhir photo strip" />
                 ) : (

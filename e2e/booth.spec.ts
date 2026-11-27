@@ -10,6 +10,7 @@ import sharp from "sharp";
 import jsQR from "jsqr";
 import { readFile } from "node:fs/promises";
 import { printPreview } from "../src/lib/print-photo";
+import { videoLayout, videoPhotoArea } from "../src/lib/video-design";
 import { printLayoutSchema } from "../src/lib/print-layout";
 
 const seeds: typeof import("../examples/starter-frames/starter-frames.json") =
@@ -197,6 +198,16 @@ test("guest opens camera directly then three photos auto-upload once, with natur
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   let uploads = 0;
   let encodes = 0;
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { testCameraConstraints: MediaStreamConstraints })
+          .testCameraConstraints,
+    ),
+  ).toMatchObject({
+    audio: false,
+    video: { height: { ideal: 1080 }, aspectRatio: { ideal: 16 / 9 } },
+  });
   await page.route("**/api/boomerang", async (route) => {
     encodes++;
     const req = route.request();
@@ -205,10 +216,24 @@ test("guest opens camera directly then three photos auto-upload once, with natur
     }).formData();
     expect(form.get("processingConsent")).toBe("true");
     expect(form.getAll("frames")).toHaveLength(3);
-    const pixels = await sharp(
-      Buffer.from(await (form.getAll("frames")[0] as File).arrayBuffer()),
-    )
-      .extract({ left: 200, top: 900, width: 1, height: 1 })
+    const firstPose = Buffer.from(
+      await (form.getAll("frames")[0] as File).arrayBuffer(),
+    );
+    expect(await sharp(firstPose).metadata()).toMatchObject({
+      width: 1440,
+      height: 1080,
+    });
+    const seed = seeds.frames[0];
+    const area = videoPhotoArea(seed, seed.slots[0]);
+    expect(area.width / area.height).toBeCloseTo(
+      (seed.slots[0].width * seed.dimensions.width) /
+        (seed.slots[0].height * seed.dimensions.height),
+      8,
+    );
+    expect(videoLayout.qrRegion.top).toBeGreaterThan(area.y + area.height);
+    expect(area.width / videoLayout.width).toBeLessThan(0.9);
+    const pixels = await sharp(firstPose)
+      .extract({ left: Math.ceil(area.x + 30), top: 500, width: 1, height: 1 })
       .raw()
       .toBuffer();
     expect(pixels[2]).toBeGreaterThan(210); // Natural, mirrored blue half.
@@ -216,6 +241,15 @@ test("guest opens camera directly then three photos auto-upload once, with natur
   });
   await page.route("**/api/photos", async (route) => {
     uploads++;
+    const request = route.request();
+    const form = await new Response(new Uint8Array(request.postDataBuffer()!), {
+      headers: { "Content-Type": request.headers()["content-type"] },
+    }).formData();
+    const print = await sharp(
+      Buffer.from(await (form.get("photo") as File).arrayBuffer()),
+    ).metadata();
+    expect(print.width).toBe(1200);
+    expect(print.height).toBe(2826); // Portrait strip remains independent of the landscape video.
     await route.continue();
   });
   await page.route("**/api/frames/**/asset/overlay?*", (route) =>
@@ -234,7 +268,7 @@ test("guest opens camera directly then three photos auto-upload once, with natur
   const video = page.getByLabel("Preview video MP4");
   await expect
     .poll(() => video.evaluate((v) => (v as HTMLVideoElement).videoWidth))
-    .toBe(1080);
+    .toBe(1440);
   expect(
     await video.evaluate((v) => (v as HTMLVideoElement).duration),
   ).toBeCloseTo(6, 1);
@@ -268,11 +302,11 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
       configurable: true,
       value: async () => {
         const canvas = document.createElement("canvas");
-        canvas.width = 800;
-        canvas.height = 600;
+        canvas.width = 600;
+        canvas.height = 800;
         const ctx = canvas.getContext("2d")!;
         ctx.fillStyle = "#8cbba3";
-        ctx.fillRect(0, 0, 800, 600);
+        ctx.fillRect(0, 0, 600, 800);
         ctx.fillStyle = "#f6dfba";
         ctx.fillRect(200, 150, 350, 350);
         active = canvas.captureStream(10);
@@ -288,6 +322,11 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
   await page.addInitScript(() => {
     let holdStarted = 0;
     const delays: number[] = [];
+    const captures: { width: number; height: number; coordinates: number[] }[] =
+      [];
+    (
+      window as unknown as { landscapeCaptures: typeof captures }
+    ).landscapeCaptures = captures;
     (window as unknown as { captureDelays: number[] }).captureDelays = delays;
     new MutationObserver(() => {
       if (
@@ -306,6 +345,11 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
       ...args: [image: CanvasImageSource, ...coordinates: number[]]
     ) {
       if (args[0] instanceof HTMLVideoElement && holdStarted) {
+        captures.push({
+          width: this.canvas.width,
+          height: this.canvas.height,
+          coordinates: args.slice(1) as number[],
+        });
         delays.push(performance.now() - holdStarted);
         holdStarted = 0;
       }
@@ -337,6 +381,33 @@ test("fake camera counts three shots and stops tracks; permission denial allows 
   );
   expect(delays).toHaveLength(3);
   expect(delays.every((delay) => delay >= 450)).toBe(true);
+  const captures = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          landscapeCaptures: {
+            width: number;
+            height: number;
+            coordinates: number[];
+          }[];
+        }
+      ).landscapeCaptures,
+  );
+  expect(captures).toHaveLength(3);
+  for (const shot of captures) {
+    expect(shot.width / shot.height).toBeCloseTo(
+      (seeds.frames[0].slots[0].width * seeds.frames[0].dimensions.width) /
+        (seeds.frames[0].slots[0].height * seeds.frames[0].dimensions.height),
+      2,
+    );
+    expect(shot.coordinates).toHaveLength(8);
+    expect(shot.coordinates[1]).toBeGreaterThan(0); // Center-crop portrait input vertically.
+    expect(shot.coordinates[2] / shot.coordinates[3]).toBeCloseTo(
+      (seeds.frames[0].slots[0].width * seeds.frames[0].dimensions.width) /
+        (seeds.frames[0].slots[0].height * seeds.frames[0].dimensions.height),
+      5,
+    );
+  }
   expect(
     await page.evaluate(() =>
       (window as unknown as { testStream: MediaStream }).testStream
@@ -518,7 +589,7 @@ test("Vintage print keeps black film artwork behind the QR, with no green panel"
   const video = page.getByLabel("Preview video MP4");
   await expect
     .poll(() => video.evaluate((v) => (v as HTMLVideoElement).videoWidth))
-    .toBe(1080);
+    .toBe(1440);
   const screenshot = await video.evaluate(async (node) => {
     const v = node as HTMLVideoElement;
     await new Promise<void>((resolve) => {
@@ -526,15 +597,15 @@ test("Vintage print keeps black film artwork behind the QR, with no green panel"
       v.currentTime = 0.5;
     });
     const canvas = document.createElement("canvas");
-    canvas.width = 1080;
-    canvas.height = 1920;
+    canvas.width = 1440;
+    canvas.height = 1080;
     canvas.getContext("2d")!.drawImage(v, 0, 0);
     return canvas.toDataURL("image/png");
   });
   const videoPixels = await sharp(
     Buffer.from(screenshot.split(",")[1], "base64"),
   )
-    .extract({ left: 0, top: 1552, width: 1080, height: 368 })
+    .extract(videoLayout.qrRegion)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -572,7 +643,7 @@ for (const theme of [
     const video = page.getByLabel("Preview video MP4");
     await expect
       .poll(() => video.evaluate((v) => (v as HTMLVideoElement).videoWidth))
-      .toBe(1080);
+      .toBe(1440);
     const screenshot = await video.evaluate(async (node) => {
       const v = node as HTMLVideoElement;
       await new Promise<void>((resolve) => {
@@ -580,8 +651,8 @@ for (const theme of [
         v.currentTime = 0.5;
       });
       const canvas = document.createElement("canvas");
-      canvas.width = 1080;
-      canvas.height = 1920;
+      canvas.width = 1440;
+      canvas.height = 1080;
       canvas.getContext("2d")!.drawImage(v, 0, 0);
       return canvas.toDataURL("image/png");
     });
@@ -598,7 +669,7 @@ for (const theme of [
       expect(Math.abs(channel - theme.color[i])).toBeLessThan(12),
     );
     const qr = await sharp(bytes)
-      .extract({ left: 0, top: 1552, width: 1080, height: 368 })
+      .extract(videoLayout.qrRegion)
       .ensureAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });

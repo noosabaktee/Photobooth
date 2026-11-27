@@ -93,7 +93,7 @@ beforeAll(async () => {
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
   const frames = await Promise.all(
     ["#d02030", "#20b050", "#3040df"].map((background) =>
-      sharp({ create: { width: 1080, height: 1920, channels: 3, background } })
+      sharp({ create: { width: 1440, height: 1080, channels: 3, background } })
         .jpeg()
         .toBuffer(),
     ),

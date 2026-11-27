@@ -1,6 +1,6 @@
 // Shared limits keep browser rendering, encoder and upload validation in sync.
-export const BOOMERANG_WIDTH = 1080;
-export const BOOMERANG_HEIGHT = 1920;
+export const BOOMERANG_WIDTH = 1440;
+export const BOOMERANG_HEIGHT = 1080;
 export const BOOMERANG_FPS = 30;
 export const BOOMERANG_SECONDS = 6;
 export const BOOMERANG_IMAGE_BYTES = 2 * 1024 * 1024;

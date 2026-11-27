@@ -6,6 +6,7 @@ import {
   readyCamera,
 } from "./camera-helper";
 import { installResultFixture } from "./result-helper";
+import seeds from "../examples/starter-frames/starter-frames.json" with { type: "json" };
 async function fits(page: Page) {
   const report = await page.evaluate(() => {
     const problems: string[] = [];
@@ -104,6 +105,13 @@ for (const viewport of [
       page.getByRole("button", { name: "Mulai countdown", exact: true }),
     ).toBeEnabled();
     await expect(page.locator(".site-header, .gallery-panel")).toHaveCount(0);
+    const cameraBox = await page.locator(".camera-viewport").boundingBox();
+    expect(cameraBox!.width / cameraBox!.height).toBeCloseTo(
+      (seeds.frames[0].slots[0].width * seeds.frames[0].dimensions.width) /
+        (seeds.frames[0].slots[0].height * seeds.frames[0].dimensions.height),
+      1,
+    );
+    expect(cameraBox!.width).toBeGreaterThan(cameraBox!.height);
     await fits(page);
     await page.getByRole("button", { name: "Privasi foto" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -112,11 +120,35 @@ for (const viewport of [
       page.getByRole("button", { name: "Privasi foto" }),
     ).toBeFocused();
     await expect(page.locator(".capture-thumbs > div")).toHaveCount(3);
+    for (const box of await page.locator(".capture-thumbs > div").all()) {
+      const bounds = await box.boundingBox();
+      expect(bounds!.width).toBeGreaterThan(bounds!.height);
+      expect(bounds!.width / bounds!.height).toBeCloseTo(
+        (seeds.frames[0].slots[0].width * seeds.frames[0].dimensions.width) /
+          (seeds.frames[0].slots[0].height * seeds.frames[0].dimensions.height),
+        1,
+      );
+    }
     await page.screenshot({
       path: `.qa/kiosk-camera-${viewport.width}x${viewport.height}.png`,
     });
     await takePhotos(page);
     await fits(page);
+    await page.getByRole("button", { name: "Video MP4", exact: true }).click();
+    const movie = page.getByLabel("Preview video MP4");
+    await expect
+      .poll(() =>
+        movie.evaluate((node) => (node as HTMLVideoElement).videoWidth),
+      )
+      .toBe(1440);
+    expect(
+      await movie.evaluate((node) => (node as HTMLVideoElement).videoHeight),
+    ).toBe(1080);
+    await fits(page);
+    await page.screenshot({
+      path: `.qa/kiosk-landscape-video-${viewport.width}x${viewport.height}.png`,
+    });
+    await page.getByRole("button", { name: "Kolase PNG", exact: true }).click();
     await page.screenshot({
       path: `.qa/kiosk-result-${viewport.width}x${viewport.height}.png`,
     });

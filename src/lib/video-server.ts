@@ -8,12 +8,8 @@ import ffmpeg from "ffmpeg-static";
 import ffprobe from "ffprobe-static";
 import QRCode from "qrcode";
 import { driveFolderUrl } from "./urls";
-import {
-  starterBackdrop,
-  starterPalette,
-  type StarterStyle,
-} from "./starter-artwork";
-import { videoLayout } from "./video-design";
+import type { StarterStyle } from "./starter-artwork";
+import { videoArtwork, videoLayout } from "./video-design";
 import { fail } from "./errors";
 import {
   BOOMERANG_WIDTH,
@@ -86,7 +82,7 @@ export async function stampVideo(
     fail(400, "INVALID_DRIVE_LINK", "Link folder tidak valid.");
   if (!bytes.length || bytes.length > BOOMERANG_VIDEO_BYTES)
     fail(413, "FILE_TOO_LARGE", "Video melebihi batas.");
-  const { width, height, footerTop, qrBox, qrX, qrY } = videoLayout;
+  const { qrRegion, qrBox, qrX, qrY } = videoLayout;
   const modules =
     QRCode.create(folderUrl, { errorCorrectionLevel: "M" }).modules.size + 8;
   const qrSize = modules * Math.floor(qrBox / modules);
@@ -101,19 +97,15 @@ export async function stampVideo(
       light: "#00000000",
     },
   });
-  const ink = starterPalette[style].ink;
-  const label = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height - footerTop}"><g fill="${ink}" font-family="sans-serif"><text x="464" y="132" font-size="32" font-weight="bold">SCAN QR</text><text x="464" y="180" font-size="27">Kolase + video</text><text x="464" y="242" font-size="22">Hoya-Hoya Days</text><text x="464" y="280" font-size="18">Simpan kenanganmu</text></g></svg>`,
-  );
-  const footer = await sharp(Buffer.from(starterBackdrop(style, width, height)))
-    .extract({ left: 0, top: footerTop, width, height: height - footerTop })
+  // Use the browser's exact artwork for spacing, typography and footer texture.
+  const footer = await sharp(Buffer.from(videoArtwork(style, true)))
+    .extract(qrRegion)
     .composite([
       {
         input: qr,
-        left: qrX + Math.floor((qrBox - qrSize) / 2),
-        top: qrY - footerTop + Math.floor((qrBox - qrSize) / 2),
+        left: qrX - qrRegion.left + Math.floor((qrBox - qrSize) / 2),
+        top: qrY - qrRegion.top + Math.floor((qrBox - qrSize) / 2),
       },
-      { input: label, left: 0, top: 0 },
     ])
     .png()
     .toBuffer();
@@ -141,7 +133,7 @@ export async function stampVideo(
         "-filter_complex_threads",
         "1",
         "-filter_complex",
-        `[0:v][1:v]overlay=0:${footerTop}:format=auto[v]`,
+        `[0:v][1:v]overlay=${qrRegion.left}:${qrRegion.top}:format=auto[v]`,
         "-map",
         "[v]",
         "-an",
@@ -208,7 +200,7 @@ export async function encodeBoomerang(frames: Buffer[]) {
         fail(
           400,
           "INVALID_IMAGE",
-          "Foto video harus JPEG valid 1080 × 1920 px, satu halaman.",
+          `Foto video harus JPEG landscape valid ${BOOMERANG_WIDTH} × ${BOOMERANG_HEIGHT} px, satu halaman.`,
         );
       }
     }
@@ -325,7 +317,7 @@ export async function validateVideo(bytes: Buffer, mime: string) {
       fail(
         400,
         "INVALID_VIDEO",
-        "Gunakan video MP4 1080 × 1920, H.264, 30 fps, enam detik tanpa audio dari aplikasi.",
+        `Gunakan video MP4 landscape ${BOOMERANG_WIDTH} × ${BOOMERANG_HEIGHT}, H.264, 30 fps, enam detik tanpa audio dari aplikasi.`,
       );
     // Decode the complete bounded stream too; metadata alone cannot detect damaged frames.
     await run(
